@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { GraduationCap, Lock, User } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,47 +42,99 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-white to-yellow-400 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold text-blue-600">We Can Academy</CardTitle>
-          <CardDescription>Weekend Skills Development System</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        {/* Logo Section */}
+        <div className="text-center mb-8 animate-in fade-in duration-700">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 mb-6 shadow-lg">
+            <GraduationCap className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-light tracking-tight text-foreground mb-2">
+            We Can Academy
+          </h1>
+          <p className="text-sm text-muted-foreground font-light tracking-wide">
+            Weekend Skills Development System
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <Card className="luxury-card border-0 animate-in slide-in-from-bottom duration-700">
+          <CardHeader className="space-y-1 pb-8 pt-8">
+            <h2 className="text-2xl font-light text-center tracking-tight">
+              Welcome Back
+            </h2>
+            <p className="text-sm text-muted-foreground text-center font-light">
+              Sign in to continue to your dashboard
+            </p>
+          </CardHeader>
+          <CardContent className="pb-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium">
+                  Username
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="pl-10 h-11 input-luxury"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="pl-10 h-11 input-luxury"
+                  />
+                </div>
+              </div>
+              {error && (
+                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg text-center font-medium animate-in fade-in duration-300">
+                  {error}
+                </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full h-11 btn-luxury text-base font-medium"
                 disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            {error && (
-              <div className="text-sm text-destructive text-center">{error}</div>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing in...
+                  </span>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="mt-8 text-center animate-in fade-in duration-1000 delay-200">
+          <p className="text-xs text-muted-foreground font-light">
+            Secure access to your academy dashboard
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
