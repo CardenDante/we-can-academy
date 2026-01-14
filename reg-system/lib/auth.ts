@@ -67,7 +67,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
 export async function getUser() {
   const session = await auth();
-  return session?.user as
-    | (typeof session.user & { id: string; role: Role })
-    | undefined;
+  if (!session?.user) return undefined;
+  return session.user as typeof session.user & { id: string; role: Role };
 }

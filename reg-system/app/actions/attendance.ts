@@ -19,7 +19,7 @@ export async function markAttendance(data: {
       studentId: data.studentId,
       sessionId: data.sessionId,
       classId: data.classId || null,
-      markedBy: currentUser.name,
+      markedBy: currentUser.name || "System",
     },
     include: {
       student: { include: { course: true } },
