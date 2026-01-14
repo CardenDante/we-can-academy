@@ -364,6 +364,127 @@ npm start
 
 ---
 
+## 🐳 Docker Setup
+
+### **Prerequisites**
+- Docker installed (version 20.10+)
+- Docker Compose installed (version 2.0+)
+
+### **Quick Start with Docker**
+
+The easiest way to run the application is using Docker Compose, which automatically sets up PostgreSQL and the Next.js application.
+
+```bash
+cd reg-system
+
+# Build and start the containers
+docker-compose up -d
+
+# View logs
+docker-compose logs -f app
+
+# Stop containers
+docker-compose down
+
+# Stop and remove volumes (WARNING: deletes database data)
+docker-compose down -v
+```
+
+### **What Docker Compose Does**
+
+1. **PostgreSQL Container**
+   - Runs PostgreSQL 16 on port 5432
+   - Database name: `wecanacademy`
+   - Username: `wecanacademy`
+   - Password: `wecanacademy123`
+   - Data persisted in Docker volume `postgres_data`
+
+2. **Next.js Application Container**
+   - Builds the application using multi-stage Docker build
+   - Runs database migrations automatically on startup
+   - Seeds initial data (30 courses + admin user)
+   - Runs on port 3000
+   - Waits for PostgreSQL to be ready before starting
+
+### **Accessing the Application**
+- URL: `http://localhost:3000`
+- Default Admin: `admin` / `admin123`
+
+### **Docker Commands**
+
+```bash
+# Rebuild containers after code changes
+docker-compose up -d --build
+
+# View all running containers
+docker ps
+
+# Access PostgreSQL directly
+docker exec -it wecanacademy-db psql -U wecanacademy -d wecanacademy
+
+# View application logs
+docker-compose logs -f app
+
+# View database logs
+docker-compose logs -f postgres
+
+# Restart only the app container
+docker-compose restart app
+
+# Execute commands in the app container
+docker-compose exec app npx prisma studio
+```
+
+### **Environment Variables**
+
+The Docker setup uses the following environment variables (defined in `docker-compose.yml`):
+
+```env
+DATABASE_URL="postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
+DIRECT_DATABASE_URL="postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
+NEXTAUTH_SECRET="change-this-secret-in-production-to-a-random-string"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+**⚠️ IMPORTANT FOR PRODUCTION:**
+- Change `NEXTAUTH_SECRET` to a strong random string
+- Update PostgreSQL credentials
+- Use environment-specific `.env` files
+- Enable SSL for database connections
+
+### **Troubleshooting Docker**
+
+**Container won't start:**
+```bash
+docker-compose logs app
+docker-compose logs postgres
+```
+
+**Database connection issues:**
+```bash
+# Ensure PostgreSQL is healthy
+docker-compose ps
+# Should show postgres as "healthy"
+
+# Test database connection
+docker-compose exec postgres pg_isready -U wecanacademy
+```
+
+**Reset everything:**
+```bash
+docker-compose down -v
+docker-compose up -d --build
+```
+
+**Port conflicts:**
+If ports 3000 or 5432 are already in use, modify `docker-compose.yml`:
+```yaml
+ports:
+  - "3001:3000"  # Change host port
+```
+
+---
+
 ## 🎨 Design Features
 
 ### **Luxury Minimalist Aesthetic**
