@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  CASHIER
+  STAFF
+  SECURITY
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum SessionType {
+  CLASS
+  CHAPEL
+}
+
+enum DayOfWeekend {
+  SATURDAY
+  SUNDAY
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([username])
+}
+
+model Course {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  students  Student[]
+  classes   Class[]
+
+  @@index([name])
+}
+
+model Class {
+  id             String          @id @default(cuid())
+  name           String
+  courseId       String
+  course         Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  sessionClasses SessionClass[]
+  attendances    Attendance[]
+
+  @@unique([courseId, name])
+  @@index([courseId])
+}
+
+model Weekend {
+  id           String    @id @default(cuid())
+  saturdayDate DateTime  @db.Date
+  name         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+
+  @@unique([saturdayDate])
+  @@index([saturdayDate])
+}
+
+model Session {
+  id             String          @id @default(cuid())
+  weekendId      String
+  weekend        Weekend         @relation(fields: [weekendId], references: [id], onDelete: Cascade)
+  day            DayOfWeekend
+  sessionType    SessionType
+  name           String
+  startTime      String
+  endTime        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  sessionClasses SessionClass[]
+  attendances    Attendance[]
+
+  @@index([weekendId])
+  @@index([day])
+  @@index([sessionType])
+}
+
+model SessionClass {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, classId])
+  @@index([sessionId])
+  @@index([classId])
+}
+
+model Student {
+  id              String       @id @default(cuid())
+  admissionNumber String       @unique
+  fullName        String
+  gender          Gender
+  courseId        String
+  course          Course       @relation(fields: [courseId], references: [id])
+  areaOfResidence String
+  phoneNumber     String
+  identification  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  attendances     Attendance[]
+
+  @@index([admissionNumber])
+  @@index([courseId])
+  @@index([fullName])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  classId   String?
+  class     Class?   @relation(fields: [classId], references: [id])
+  markedAt  DateTime @default(now())
+  markedBy  String
+
+  @@unique([studentId, sessionId])
+  @@index([studentId])
+  @@index([sessionId])
+  @@index([classId])
+}
