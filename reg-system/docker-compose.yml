@@ -1,0 +1,50 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wecanacademy-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wecanacademy
+      POSTGRES_PASSWORD: wecanacademy123
+      POSTGRES_DB: wecanacademy
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wecanacademy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wecanacademy-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wecanacademy-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
+      DIRECT_DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
+      NEXTAUTH_SECRET: "change-this-secret-in-production-to-a-random-string"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NODE_ENV: "production"
+    ports:
+      - "3000:3000"
+    networks:
+      - wecanacademy-network
+
+networks:
+  wecanacademy-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
