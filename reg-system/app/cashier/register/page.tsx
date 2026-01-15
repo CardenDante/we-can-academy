@@ -5,18 +5,19 @@ import { RegisterStudentForm } from "./register-form";
 
 export default async function RegisterPage() {
   const user = await getUser();
+  
   if (!user || (user.role !== "CASHIER" && user.role !== "ADMIN")) {
     redirect("/");
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/30">
       <Header user={{ name: user.name!, role: user.role }} />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Register Student</h2>
-          <p className="text-muted-foreground">Register a new student to the academy</p>
-        </div>
+      
+      {/* bg-grid-black/[0.02] creates a very subtle texture if you have that utility, 
+        otherwise it falls back to a clean gray background 
+      */}
+      <main className="container max-w-5xl mx-auto px-4 py-12 flex justify-center">
         <RegisterStudentForm />
       </main>
     </div>
