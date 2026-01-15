@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getStudentByAdmission } from "@/app/actions/students";
 import { ScanLine } from "lucide-react";
+import { AttendancePassport } from "@/components/attendance-passport";
 
 export function SecurityClient() {
   const [admissionNumber, setAdmissionNumber] = useState("");
@@ -78,7 +79,8 @@ export function SecurityClient() {
       </Card>
 
       {student && (
-        <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3 auto-rows-max">
+          {/* Student Details - Spans 1 column */}
           <Card className="luxury-card border-green-500 dark:border-green-600 border-2">
             <CardHeader className="bg-green-50 dark:bg-green-950/20 pb-4 sm:pb-6">
               <CardTitle className="text-xl sm:text-2xl font-light tracking-tight text-green-700 dark:text-green-400">
@@ -86,107 +88,68 @@ export function SecurityClient() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 sm:pt-8">
-              <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
-                <div className="space-y-4 sm:space-y-5">
+              <div className="space-y-4 sm:space-y-5">
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Full Name</div>
+                  <div className="text-lg sm:text-xl font-bold tracking-tight">{student.fullName}</div>
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Admission Number</div>
+                  <div className="text-base sm:text-lg font-medium">{student.admissionNumber}</div>
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Gender</div>
                   <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Full Name</div>
-                    <div className="text-lg sm:text-xl font-bold tracking-tight">{student.fullName}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Admission Number</div>
-                    <div className="text-base sm:text-lg font-medium">{student.admissionNumber}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Gender</div>
-                    <div>
-                      <Badge variant={student.gender === "MALE" ? "default" : "secondary"} className="text-xs">
-                        {student.gender}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Course</div>
-                    <div className="font-medium text-sm sm:text-base">{student.course.name}</div>
+                    <Badge variant={student.gender === "MALE" ? "default" : "secondary"} className="text-xs">
+                      {student.gender}
+                    </Badge>
                   </div>
                 </div>
-                <div className="space-y-4 sm:space-y-5">
-                  <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Phone Number</div>
-                    <div className="font-medium text-sm sm:text-base">{student.phoneNumber}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Identification</div>
-                    <div className="font-medium text-sm sm:text-base">{student.identification}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Area of Residence</div>
-                    <div className="font-medium text-sm sm:text-base">{student.areaOfResidence}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mb-1">Registered</div>
-                    <div className="font-medium text-sm sm:text-base">
-                      {new Date(student.createdAt).toLocaleDateString()}
-                    </div>
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Course</div>
+                  <div className="font-medium text-sm sm:text-base">{student.course.name}</div>
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Phone Number</div>
+                  <div className="font-medium text-sm sm:text-base">{student.phoneNumber}</div>
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Identification</div>
+                  <div className="font-medium text-sm sm:text-base">{student.identification}</div>
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Area of Residence</div>
+                  <div className="font-medium text-sm sm:text-base">{student.areaOfResidence}</div>
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">Registered</div>
+                  <div className="font-medium text-sm sm:text-base">
+                    {new Date(student.createdAt).toLocaleDateString()}
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="luxury-card border-0">
-            <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">
-                Attendance History
-                <span className="ml-2 text-sm text-muted-foreground font-normal">
-                  ({student.attendances.length} record{student.attendances.length !== 1 ? "s" : ""})
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {student.attendances.length === 0 ? (
-                <div className="text-center text-muted-foreground py-12">
-                  No attendance records yet
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {student.attendances.slice(0, 10).map((att: any) => (
-                    <div
-                      key={att.id}
-                      className="border border-border/50 rounded-lg p-4 sm:p-5 hover:bg-accent/30 hover:border-primary/20 transition-all"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
-                        <div className="flex-1">
-                          <div className="font-semibold text-base sm:text-lg tracking-tight">
-                            {att.session.weekend.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {att.session.name} - {att.session.day}
-                          </div>
-                        </div>
-                        <Badge variant={att.session.sessionType === "CLASS" ? "default" : "secondary"} className="text-xs self-start">
-                          {att.session.sessionType}
-                        </Badge>
-                      </div>
-                      {att.class && (
-                        <div className="text-sm mb-2">
-                          <span className="text-muted-foreground">Class:</span>{" "}
-                          <span className="font-medium">{att.class.name}</span>
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Marked: {new Date(att.markedAt).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                  {student.attendances.length > 10 && (
-                    <div className="text-center text-sm text-muted-foreground pt-3 border-t">
-                      Showing 10 of {student.attendances.length} records
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Chapel Passport - Spans 1 column on lg, 2 on xl */}
+          <div className="xl:col-span-2">
+            <AttendancePassport
+              attendances={student.attendances}
+              weekends={student.weekends}
+              type="CHAPEL"
+              studentId={student.id}
+            />
+          </div>
+
+          {/* Class Passport - Spans full width on all screens */}
+          <div className="lg:col-span-2 xl:col-span-3">
+            <AttendancePassport
+              attendances={student.attendances}
+              weekends={student.weekends}
+              type="CLASS"
+              studentId={student.id}
+            />
+          </div>
         </div>
       )}
     </div>

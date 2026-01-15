@@ -4,13 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createWeekend } from "@/app/actions/academy";
+import { Checkbox } from "@/components/ui/checkbox";
+import { createWeekend, generateWeekends } from "@/app/actions/academy";
 
 export function CreateWeekendForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [formKey, setFormKey] = useState(0);
+  const [generateProgram, setGenerateProgram] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -19,15 +21,21 @@ export function CreateWeekendForm() {
     setSuccess("");
 
     const formData = new FormData(e.currentTarget);
-    const data = {
-      saturdayDate: new Date(formData.get("saturdayDate") as string),
-      name: formData.get("name") as string,
-    };
+    const saturdayDate = new Date(formData.get("saturdayDate") as string);
+    const name = formData.get("name") as string;
 
     try {
-      await createWeekend(data);
-      setSuccess("Weekend created successfully!");
+      if (generateProgram) {
+        // Generate 12 weeks automatically
+        await generateWeekends({ startDate: saturdayDate, startName: name });
+        setSuccess("12-week program generated successfully!");
+      } else {
+        // Create single weekend
+        await createWeekend({ saturdayDate, name });
+        setSuccess("Weekend created successfully!");
+      }
       setFormKey(prev => prev + 1);
+      setGenerateProgram(false);
     } catch (err: any) {
       setError(err.message || "Failed to create weekend");
     } finally {
@@ -45,6 +53,19 @@ export function CreateWeekendForm() {
         <Label htmlFor="saturdayDate">Saturday Date</Label>
         <Input id="saturdayDate" name="saturdayDate" type="date" required />
       </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="generateProgram"
+          checked={generateProgram}
+          onCheckedChange={(checked) => setGenerateProgram(checked as boolean)}
+        />
+        <Label
+          htmlFor="generateProgram"
+          className="text-sm font-normal cursor-pointer"
+        >
+          Generate 12-week program automatically
+        </Label>
+      </div>
       {error && (
         <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
           {error}
@@ -56,7 +77,7 @@ export function CreateWeekendForm() {
         </div>
       )}
       <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Creating..." : "Create Weekend"}
+        {loading ? "Creating..." : generateProgram ? "Generate 12 Weeks" : "Create Weekend"}
       </Button>
     </form>
   );

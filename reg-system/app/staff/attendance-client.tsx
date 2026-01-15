@@ -39,9 +39,20 @@ export function AttendanceClient() {
   async function loadSessions() {
     try {
       const data = await getSessions();
-      // Filter recent sessions
-      const recent = data.slice(0, 20);
-      setSessions(recent);
+      // Filter to show only current and future weekends
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const currentAndFuture = data.filter((session) => {
+        const sessionDate = new Date(session.weekend.saturdayDate);
+        if (session.day === "SUNDAY") {
+          sessionDate.setDate(sessionDate.getDate() + 1);
+        }
+        sessionDate.setHours(0, 0, 0, 0);
+        return sessionDate >= today;
+      });
+
+      setSessions(currentAndFuture);
     } catch (error) {
       console.error(error);
     }

@@ -17,7 +17,6 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [selectedWeekend, setSelectedWeekend] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [formKey, setFormKey] = useState(0);
@@ -30,7 +29,6 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
 
     const formData = new FormData(e.currentTarget);
     const data = {
-      weekendId: selectedWeekend,
       day: selectedDay as "SATURDAY" | "SUNDAY",
       sessionType: selectedType as "CLASS" | "CHAPEL",
       name: formData.get("name") as string,
@@ -38,7 +36,7 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
       endTime: formData.get("endTime") as string,
     };
 
-    if (!data.weekendId || !data.day || !data.sessionType) {
+    if (!data.day || !data.sessionType) {
       setError("Please fill in all required fields");
       setLoading(false);
       return;
@@ -46,11 +44,11 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
 
     try {
       await createSession(data);
-      setSuccess("Session created successfully!");
-      setSelectedWeekend("");
+      setSuccess(`Session created for all ${weekends.length} weekends!`);
       setSelectedDay("");
       setSelectedType("");
       setFormKey(prev => prev + 1);
+      setTimeout(() => setSuccess(""), 5000);
     } catch (err: any) {
       setError(err.message || "Failed to create session");
     } finally {
@@ -60,21 +58,10 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
 
   return (
     <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="weekend">Weekend</Label>
-        <Select value={selectedWeekend} onValueChange={setSelectedWeekend} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Select weekend" />
-          </SelectTrigger>
-          <SelectContent>
-            {weekends.map((weekend) => (
-              <SelectItem key={weekend.id} value={weekend.id}>
-                {weekend.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm rounded-md">
+        💡 This session will be created for all {weekends.length} weekends automatically
       </div>
+
       <div>
         <Label htmlFor="day">Day</Label>
         <Select value={selectedDay} onValueChange={setSelectedDay} required>
