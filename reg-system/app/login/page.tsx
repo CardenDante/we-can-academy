@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { GraduationCap, Lock, User } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -30,13 +28,17 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Invalid username or password");
+        setLoading(false);
+      } else if (result?.ok) {
+        // Force a full page reload to ensure session is loaded and middleware runs
+        window.location.href = "/";
       } else {
-        router.push("/");
-        router.refresh();
+        setError("An unexpected error occurred. Please try again.");
+        setLoading(false);
       }
     } catch (error) {
+      console.error("Login error:", error);
       setError("An error occurred. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
@@ -46,9 +48,6 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo Section */}
         <div className="text-center mb-8 animate-in fade-in duration-700">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 mb-6 shadow-lg">
-            <GraduationCap className="w-10 h-10 text-white" />
-          </div>
           <h1 className="text-4xl font-light tracking-tight text-foreground mb-2">
             We Can Academy
           </h1>
