@@ -12,10 +12,14 @@ export default async function SecurityPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header user={{ name: user.name!, role: user.role }} />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Gate Lookup</h2>
-          <p className="text-muted-foreground">Scan barcode or NFC to view student information</p>
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+            Gate Lookup
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground font-light">
+            Scan barcode or NFC to view student information
+          </p>
         </div>
         <SecurityClient />
       </main>
