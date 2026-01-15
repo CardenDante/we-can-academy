@@ -112,12 +112,12 @@ export function AttendanceClient() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Mode</CardTitle>
+      <Card className="luxury-card border-0">
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Select Attendance Mode</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button
               variant={mode === "CLASS" ? "default" : "outline"}
               onClick={() => {
@@ -126,11 +126,14 @@ export function AttendanceClient() {
                 setSelectedClass("");
                 setAttendances([]);
               }}
-              className="h-20"
+              className="h-24 sm:h-28 transition-all hover:scale-[1.02]"
             >
-              <div className="flex flex-col items-center gap-2">
-                <Users className="h-6 w-6" />
-                <span>CLASS</span>
+              <div className="flex flex-col items-center gap-3">
+                <Users className="h-8 w-8" />
+                <div>
+                  <div className="font-medium text-base">CLASS</div>
+                  <div className="text-xs text-muted-foreground mt-1">Mark class attendance</div>
+                </div>
               </div>
             </Button>
             <Button
@@ -141,31 +144,36 @@ export function AttendanceClient() {
                 setSelectedClass("");
                 setAttendances([]);
               }}
-              className="h-20"
+              className="h-24 sm:h-28 transition-all hover:scale-[1.02]"
             >
-              <div className="flex flex-col items-center gap-2">
-                <Church className="h-6 w-6" />
-                <span>CHAPEL</span>
+              <div className="flex flex-col items-center gap-3">
+                <Church className="h-8 w-8" />
+                <div>
+                  <div className="font-medium text-base">CHAPEL</div>
+                  <div className="text-xs text-muted-foreground mt-1">Mark chapel attendance</div>
+                </div>
               </div>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Mark Attendance - {mode}</CardTitle>
+      <Card className="luxury-card border-0">
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">
+            Mark Attendance - {mode}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleMarkAttendance} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+          <form onSubmit={handleMarkAttendance} className="space-y-6">
+            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="session">Select Session *</Label>
+                <Label htmlFor="session" className="text-sm font-medium">Select Session *</Label>
                 <Select value={selectedSession} onValueChange={setSelectedSession}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11">
                     <SelectValue placeholder="Select session" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px]">
                     {filteredSessions.map((session) => (
                       <SelectItem key={session.id} value={session.id}>
                         {session.weekend.name} - {session.day} - {session.name}
@@ -177,12 +185,12 @@ export function AttendanceClient() {
 
               {mode === "CLASS" && (
                 <div className="space-y-2">
-                  <Label htmlFor="class">Select Class *</Label>
+                  <Label htmlFor="class" className="text-sm font-medium">Select Class *</Label>
                   <Select value={selectedClass} onValueChange={setSelectedClass}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11">
                       <SelectValue placeholder="Select class" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px]">
                       {classes.map((cls) => (
                         <SelectItem key={cls.id} value={cls.id}>
                           {cls.course.name} - Class {cls.name}
@@ -195,8 +203,10 @@ export function AttendanceClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admissionNumber">Scan Admission Number *</Label>
-              <div className="flex gap-2">
+              <Label htmlFor="admissionNumber" className="text-sm font-medium">
+                Scan Admission Number *
+              </Label>
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   id="admissionNumber"
                   value={admissionNumber}
@@ -204,8 +214,9 @@ export function AttendanceClient() {
                   placeholder="Scan or enter admission number"
                   required
                   autoFocus
+                  className="h-11 flex-1"
                 />
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} className="h-11 sm:min-w-[140px]">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   {loading ? "Marking..." : "Mark"}
                 </Button>
@@ -213,12 +224,14 @@ export function AttendanceClient() {
             </div>
 
             {error && (
-              <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-destructive" />
                 {error}
               </div>
             )}
             {success && (
-              <div className="p-3 bg-green-500/10 text-green-600 text-sm rounded-md">
+              <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded-lg flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
                 {success}
               </div>
             )}
@@ -227,50 +240,57 @@ export function AttendanceClient() {
       </Card>
 
       {selectedSession && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Recent Attendance ({attendances.length} students)
+        <Card className="luxury-card border-0">
+          <CardHeader className="pb-4 sm:pb-6">
+            <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">
+              Recent Attendance
+              <span className="ml-2 text-sm text-muted-foreground font-normal">
+                ({attendances.length} student{attendances.length !== 1 ? "s" : ""})
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 sm:px-6">
             {attendances.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
+              <div className="text-center text-muted-foreground py-12">
                 No attendance marked yet
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Admission #</TableHead>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead>Course</TableHead>
-                    {mode === "CLASS" && <TableHead>Class</TableHead>}
-                    <TableHead>Marked At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendances.map((att) => (
-                    <TableRow key={att.id}>
-                      <TableCell className="font-medium">
-                        {att.student.admissionNumber}
-                      </TableCell>
-                      <TableCell>{att.student.fullName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{att.student.course.name}</Badge>
-                      </TableCell>
-                      {mode === "CLASS" && (
-                        <TableCell>
-                          {att.class ? att.class.name : "-"}
-                        </TableCell>
-                      )}
-                      <TableCell className="text-muted-foreground">
-                        {new Date(att.markedAt).toLocaleTimeString()}
-                      </TableCell>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="pl-4 sm:pl-4">Admission #</TableHead>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead className="hidden sm:table-cell">Course</TableHead>
+                      {mode === "CLASS" && <TableHead className="hidden md:table-cell">Class</TableHead>}
+                      <TableHead className="hidden lg:table-cell">Marked At</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {attendances.map((att) => (
+                      <TableRow key={att.id}>
+                        <TableCell className="font-medium pl-4 sm:pl-4">
+                          {att.student.admissionNumber}
+                        </TableCell>
+                        <TableCell>{att.student.fullName}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge variant="outline" className="text-xs">
+                            {att.student.course.name}
+                          </Badge>
+                        </TableCell>
+                        {mode === "CLASS" && (
+                          <TableCell className="hidden md:table-cell">
+                            {att.class ? att.class.name : "-"}
+                          </TableCell>
+                        )}
+                        <TableCell className="text-muted-foreground text-sm hidden lg:table-cell">
+                          {new Date(att.markedAt).toLocaleTimeString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

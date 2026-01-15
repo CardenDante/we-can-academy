@@ -122,7 +122,7 @@ export function RegisterStudentForm() {
                 <Label htmlFor="fullName">Full Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="fullName" name="fullName" placeholder="John Doe" className="pl-9" required />
+                  <Input id="fullName" name="fullName" placeholder=" e.g. Daniel Chacha" className="pl-9" required />
                 </div>
               </div>
 
@@ -151,7 +151,7 @@ export function RegisterStudentForm() {
                 <Label htmlFor="identification">ID / Passport</Label>
                 <div className="relative">
                   <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="identification" name="identification" placeholder="ID Number" className="pl-9" required />
+                  <Input id="identification" name="identification" placeholder="ID Number/Passport" className="pl-9" required />
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@ export function RegisterStudentForm() {
               <Label htmlFor="areaOfResidence">Area of Residence</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="areaOfResidence" name="areaOfResidence" placeholder="e.g. Westlands, Nairobi" className="pl-9" required />
+                <Input id="areaOfResidence" name="areaOfResidence" placeholder="e.g. Githurai 44" className="pl-9" required />
               </div>
             </div>
           </div>
@@ -178,7 +178,7 @@ export function RegisterStudentForm() {
                 <Label htmlFor="admissionNumber">Receipt / Admission #</Label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input id="admissionNumber" name="admissionNumber" placeholder="REC-001" className="pl-9" required />
+                  <Input id="admissionNumber" name="admissionNumber" placeholder="eg. 5326" className="pl-9" required />
                 </div>
               </div>
 

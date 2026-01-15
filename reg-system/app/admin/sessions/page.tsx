@@ -37,8 +37,8 @@ export default async function SessionsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3">
-          <Card className="luxury-card border-0 lg:col-span-2 order-2 lg:order-1">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <Card className="luxury-card border-0 flex-1 order-2 lg:order-1">
             <CardHeader className="pb-4 sm:pb-6">
               <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">All Sessions</CardTitle>
               <CardDescription className="text-sm font-light">
@@ -100,7 +100,7 @@ export default async function SessionsPage() {
             </CardContent>
           </Card>
 
-          <Card className="luxury-card border-0 order-1 lg:order-2">
+          <Card className="luxury-card border-0 w-full lg:w-[380px] lg:sticky lg:top-6 order-1 lg:order-2 shrink-0">
             <CardHeader className="pb-4 sm:pb-6">
               <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create Session</CardTitle>
               <CardDescription className="text-sm font-light">Add a new session to a weekend</CardDescription>
