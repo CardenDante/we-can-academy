@@ -46,15 +46,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        {/* Logo Section */}
-        <div className="text-center mb-8 animate-in fade-in duration-700">
-          <h1 className="text-4xl font-light tracking-tight text-foreground mb-2">
-            We Can Academy
-          </h1>
-          <p className="text-sm text-muted-foreground font-light tracking-wide">
-            Weekend Skills Development System
-          </p>
-        </div>
 
         {/* Login Card */}
         <Card className="luxury-card border-0 animate-in slide-in-from-bottom duration-700">
