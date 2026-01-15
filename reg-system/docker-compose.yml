@@ -35,6 +35,7 @@ services:
       DIRECT_DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
       NEXTAUTH_SECRET: "change-this-secret-in-production-to-a-random-string"
       NEXTAUTH_URL: "http://localhost:3000"
+      AUTH_TRUST_HOST: "true"
       NODE_ENV: "production"
     ports:
       - "3000:3000"
