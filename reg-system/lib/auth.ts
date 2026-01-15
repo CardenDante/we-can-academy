@@ -44,7 +44,6 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
     }),
   ],
   callbacks: {
-    ...authConfig.callbacks,
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -59,6 +58,7 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
       }
       return session;
     },
+    ...authConfig.callbacks,
   },
   session: {
     strategy: "jwt",

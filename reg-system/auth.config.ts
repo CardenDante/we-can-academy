@@ -9,8 +9,18 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
 
+      // Allow static files, Next.js internals, and public assets
+      if (
+        pathname.startsWith("/_next") ||
+        pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/favicon.ico") ||
+        pathname.includes(".")  // Allow files with extensions (CSS, JS, images, etc.)
+      ) {
+        return true;
+      }
+
       // Public routes
-      if (pathname === "/login" || pathname.startsWith("/api/auth")) {
+      if (pathname === "/login" || pathname === "/unauthorized") {
         if (isLoggedIn && pathname === "/login") {
           // Redirect to appropriate dashboard if already logged in
           const role = (auth.user as any).role;
@@ -27,7 +37,11 @@ export const authConfig = {
       // Role-based access control
       const role = (auth.user as any).role;
 
+      // Debug logging
+      console.log(`[Auth] User: ${auth.user?.name}, Role: ${role}, Path: ${pathname}`);
+
       if (pathname.startsWith("/admin") && role !== "ADMIN") {
+        console.log(`[Auth] Access denied to /admin - Role is ${role}, expected ADMIN`);
         return Response.redirect(new URL("/unauthorized", nextUrl));
       }
 

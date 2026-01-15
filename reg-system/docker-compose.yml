@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,10 +7,24 @@ services:
       POSTGRES_USER: wecanacademy
       POSTGRES_PASSWORD: wecanacademy123
       POSTGRES_DB: wecanacademy
+      # PostgreSQL performance tuning for heavy traffic
+      POSTGRES_MAX_CONNECTIONS: 200
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 16MB
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U wecanacademy"]
       interval: 10s
@@ -20,6 +32,21 @@ services:
       retries: 5
     networks:
       - wecanacademy-network
+    # PostgreSQL configuration for performance
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=16MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
 
   app:
     build:
@@ -31,14 +58,35 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
+      # Database connection with connection pooling
+      DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public&connection_limit=50&pool_timeout=10"
       DIRECT_DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
       NEXTAUTH_SECRET: "change-this-secret-in-production-to-a-random-string"
       NEXTAUTH_URL: "http://localhost:3000"
       AUTH_TRUST_HOST: "true"
       NODE_ENV: "production"
+      # Performance optimizations
+      UV_THREADPOOL_SIZE: 16
     ports:
       - "3000:3000"
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      # Enable multiple replicas for load balancing (uncomment for production)
+      # replicas: 3
+    # Health check for the app
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/auth/session', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - wecanacademy-network
 

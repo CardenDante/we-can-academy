@@ -9,13 +9,10 @@ done
 
 echo "PostgreSQL is ready!"
 
-# Run Prisma migrations
-echo "Running database migrations..."
-npx prisma migrate deploy
-
-# Seed the database if needed
-echo "Seeding database..."
-npx prisma db seed || echo "Seed failed or already seeded"
+# Skip migrations in production - run them manually or in CI/CD
+# Migrations require full Prisma CLI which increases image size significantly
+echo "Skipping migrations (should be run manually or in CI/CD)..."
+echo "To run migrations: docker exec wecanacademy-app npx prisma migrate deploy"
 
 echo "Starting Next.js application..."
 exec "$@"

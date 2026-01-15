@@ -1,5 +1,29 @@
 @import "tailwindcss";
 
+@theme {
+  /* Color Palette */
+  --color-primary: hsl(214 100% 48%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(210 40% 96%);
+  --color-secondary-foreground: hsl(222.2 47% 11%);
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-muted: hsl(210 40% 96%);
+  --color-muted-foreground: hsl(215 16% 47%);
+  --color-accent: hsl(210 40% 96%);
+  --color-accent-foreground: hsl(222.2 47% 11%);
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(214 100% 48%);
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 47% 11%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 47% 11%);
+
+  /* Radius */
+  --radius: 0.5rem;
+}
+
 * {
   border-color: hsl(214.3 31.8% 91.4%);
 }
@@ -25,7 +49,11 @@ html {
   border-radius: 4px;
 }
 
+/* Luxury Card Styling */
 .luxury-card {
+  background: white;
+  border: 1px solid hsl(214.3 31.8% 91.4%);
+  border-radius: 0.75rem;
   box-shadow:
     0 1px 3px 0 rgb(0 0 0 / 0.05),
     0 20px 40px -12px rgb(0 0 0 / 0.08);
@@ -39,27 +67,120 @@ html {
   transform: translateY(-2px);
 }
 
+/* Button Styling */
 .btn-luxury {
+  background: linear-gradient(135deg, hsl(214 100% 48%) 0%, hsl(214 100% 42%) 100%);
+  color: white;
   font-weight: 500;
   letter-spacing: 0.025em;
+  border-radius: 0.5rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
 }
 
-.btn-luxury:hover {
+.btn-luxury:hover:not(:disabled) {
+  background: linear-gradient(135deg, hsl(214 100% 42%) 0%, hsl(214 100% 38%) 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.15);
 }
 
+.btn-luxury:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Input Styling */
 .input-luxury {
+  background: white;
+  border: 1px solid hsl(214.3 31.8% 91.4%);
+  border-radius: 0.5rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: hsl(222.2 47% 11%);
 }
 
 .input-luxury:focus {
+  border-color: hsl(214 100% 48%);
   box-shadow: 0 0 0 3px hsl(214 100% 48% / 0.1);
+  outline: none;
 }
 
+.input-luxury::placeholder {
+  color: hsl(215 16% 47%);
+}
+
+.input-luxury:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: hsl(210 40% 98%);
+}
+
+/* Glass Effect */
 .glass-effect {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.slide-in-from-bottom {
+  animation: slide-in-from-bottom 0.5s ease-out;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}
+
+.duration-700 {
+  animation-duration: 700ms;
+}
+
+.duration-1000 {
+  animation-duration: 1000ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+/* Gradient Background for Icon */
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+.from-primary {
+  --tw-gradient-from: hsl(214 100% 48%);
+  --tw-gradient-to: hsl(214 100% 48% / 0);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-primary\/80 {
+  --tw-gradient-to: hsl(214 100% 48% / 0.8);
 }
