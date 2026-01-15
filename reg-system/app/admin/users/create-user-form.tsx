@@ -11,6 +11,8 @@ export function CreateUserForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,13 +25,20 @@ export function CreateUserForm() {
       username: formData.get("username") as string,
       password: formData.get("password") as string,
       name: formData.get("name") as string,
-      role: formData.get("role") as "ADMIN" | "CASHIER" | "STAFF" | "SECURITY",
+      role: selectedRole as "ADMIN" | "CASHIER" | "STAFF" | "SECURITY",
     };
+
+    if (!data.role) {
+      setError("Please select a role");
+      setLoading(false);
+      return;
+    }
 
     try {
       await createUser(data);
       setSuccess("User created successfully!");
-      e.currentTarget.reset();
+      setSelectedRole("");
+      setFormKey(prev => prev + 1);
     } catch (err: any) {
       setError(err.message || "Failed to create user");
     } finally {
@@ -38,7 +47,7 @@ export function CreateUserForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="username">Username</Label>
         <Input id="username" name="username" required />
@@ -53,7 +62,7 @@ export function CreateUserForm() {
       </div>
       <div>
         <Label htmlFor="role">Role</Label>
-        <Select name="role" required>
+        <Select value={selectedRole} onValueChange={setSelectedRole} required>
           <SelectTrigger>
             <SelectValue placeholder="Select role" />
           </SelectTrigger>

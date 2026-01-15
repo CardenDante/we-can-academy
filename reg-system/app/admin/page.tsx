@@ -2,11 +2,74 @@ import { getUser } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { Card, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight } from "lucide-react";
+import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight, TrendingUp } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
   const user = await getUser();
   if (!user) return null;
+
+  // Fetch statistics
+  const [
+    totalStudents,
+    totalUsers,
+    totalCourses,
+    totalClasses,
+    totalWeekends,
+    totalSessions,
+  ] = await Promise.all([
+    prisma.student.count(),
+    prisma.user.count(),
+    prisma.course.count(),
+    prisma.class.count(),
+    prisma.weekend.count(),
+    prisma.session.count(),
+  ]);
+
+  const statistics = [
+    {
+      title: "Total Students",
+      value: totalStudents,
+      icon: GraduationCap,
+      color: "text-purple-500",
+      bgColor: "bg-purple-50 dark:bg-purple-950/20",
+    },
+    {
+      title: "Total Users",
+      value: totalUsers,
+      icon: Users,
+      color: "text-blue-500",
+      bgColor: "bg-blue-50 dark:bg-blue-950/20",
+    },
+    {
+      title: "Total Courses",
+      value: totalCourses,
+      icon: BookOpen,
+      color: "text-emerald-500",
+      bgColor: "bg-emerald-50 dark:bg-emerald-950/20",
+    },
+    {
+      title: "Total Classes",
+      value: totalClasses,
+      icon: ClipboardList,
+      color: "text-amber-500",
+      bgColor: "bg-amber-50 dark:bg-amber-950/20",
+    },
+    {
+      title: "Total Weekends",
+      value: totalWeekends,
+      icon: Calendar,
+      color: "text-rose-500",
+      bgColor: "bg-rose-50 dark:bg-rose-950/20",
+    },
+    {
+      title: "Total Sessions",
+      value: totalSessions,
+      icon: Settings,
+      color: "text-indigo-500",
+      bgColor: "bg-indigo-50 dark:bg-indigo-950/20",
+    },
+  ];
 
   const cards = [
     {
@@ -65,6 +128,33 @@ export default async function AdminPage() {
             Manage all aspects of the academy system
           </p>
         </div>
+
+        {/* Statistics Row */}
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 mb-12">
+          {statistics.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card
+                key={stat.title}
+                className="luxury-card border-0 overflow-hidden"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <CardHeader className="pb-4 pt-6">
+                  <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center mb-4`}>
+                    <Icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                  <div className="text-3xl font-semibold tracking-tight mb-1">
+                    {stat.value}
+                  </div>
+                  <p className="text-xs text-muted-foreground font-light">
+                    {stat.title}
+                  </p>
+                </CardHeader>
+              </Card>
+            );
+          })}
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {cards.map((card, index) => {
             const Icon = card.icon;

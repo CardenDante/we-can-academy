@@ -20,6 +20,7 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
   const [selectedWeekend, setSelectedWeekend] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedType, setSelectedType] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,10 +47,10 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
     try {
       await createSession(data);
       setSuccess("Session created successfully!");
-      e.currentTarget.reset();
       setSelectedWeekend("");
       setSelectedDay("");
       setSelectedType("");
+      setFormKey(prev => prev + 1);
     } catch (err: any) {
       setError(err.message || "Failed to create session");
     } finally {
@@ -58,7 +59,7 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="weekend">Weekend</Label>
         <Select value={selectedWeekend} onValueChange={setSelectedWeekend} required>

@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getClasses, getCourses } from "@/app/actions/academy";
 import { CreateClassForm } from "./create-class-form";
 import { DeleteClassButton } from "./delete-class-button";
+import { BackButton } from "@/components/back-button";
 import { redirect } from "next/navigation";
 
 export default async function ClassesPage() {
@@ -18,55 +19,63 @@ export default async function ClassesPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header user={{ name: user.name!, role: user.role }} />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Classes</h2>
-          <p className="text-muted-foreground">Create and manage class divisions (A, B, C) for courses</p>
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <BackButton href="/admin" />
+
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+            Classes Management
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground font-light">
+            Create and manage class divisions (A, B, C) for courses
+          </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>All Classes</CardTitle>
-              <CardDescription>
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3">
+          <Card className="luxury-card border-0 lg:col-span-2 order-2 lg:order-1">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">All Classes</CardTitle>
+              <CardDescription className="text-sm font-light">
                 {classes.length} class{classes.length !== 1 ? "es" : ""} configured
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
+            <CardContent className="px-0 sm:px-6">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Class Name</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="pl-4 sm:pl-4">Class Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Course</TableHead>
+                    <TableHead className="text-right pr-4 sm:pr-4">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {classes.map((cls) => (
                     <TableRow key={cls.id}>
-                      <TableCell className="font-medium">{cls.name}</TableCell>
-                      <TableCell>{cls.course.name}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="font-medium pl-4 sm:pl-4">{cls.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{cls.course.name}</TableCell>
+                      <TableCell className="text-right pr-4 sm:pr-4">
                         <DeleteClassButton classId={cls.id} className={cls.name} />
                       </TableCell>
                     </TableRow>
                   ))}
                   {classes.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
                         No classes created yet
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Create Class</CardTitle>
-              <CardDescription>Add a new class division</CardDescription>
+          <Card className="luxury-card border-0 order-1 lg:order-2">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create Class</CardTitle>
+              <CardDescription className="text-sm font-light">Add a new class division</CardDescription>
             </CardHeader>
             <CardContent>
               <CreateClassForm courses={courses} />

@@ -17,6 +17,7 @@ export function CreateClassForm({ courses }: { courses: Course[] }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,8 +40,8 @@ export function CreateClassForm({ courses }: { courses: Course[] }) {
     try {
       await createClass(data);
       setSuccess("Class created successfully!");
-      e.currentTarget.reset();
       setSelectedCourse("");
+      setFormKey(prev => prev + 1);
     } catch (err: any) {
       setError(err.message || "Failed to create class");
     } finally {
@@ -49,7 +50,7 @@ export function CreateClassForm({ courses }: { courses: Course[] }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="name">Class Name</Label>
         <Input id="name" name="name" placeholder="e.g. A, B, C" required />

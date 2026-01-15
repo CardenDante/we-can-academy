@@ -10,6 +10,7 @@ export function CreateWeekendForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,7 +27,7 @@ export function CreateWeekendForm() {
     try {
       await createWeekend(data);
       setSuccess("Weekend created successfully!");
-      e.currentTarget.reset();
+      setFormKey(prev => prev + 1);
     } catch (err: any) {
       setError(err.message || "Failed to create weekend");
     } finally {
@@ -35,7 +36,7 @@ export function CreateWeekendForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="name">Weekend Name</Label>
         <Input id="name" name="name" placeholder="e.g. Weekend 1" required />
