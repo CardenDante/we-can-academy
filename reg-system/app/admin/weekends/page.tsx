@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getWeekends } from "@/app/actions/academy";
 import { CreateWeekendForm } from "./create-weekend-form";
 import { DeleteWeekendButton } from "./delete-weekend-button";
+import { GenerateRemainingButton } from "./generate-remaining-button";
 import { BackButton } from "@/components/back-button";
 import { redirect } from "next/navigation";
 
@@ -85,15 +86,27 @@ export default async function WeekendsPage() {
             </CardContent>
           </Card>
 
-          <Card className="luxury-card border-0 w-full lg:w-[380px] lg:sticky lg:top-6 order-1 lg:order-2 shrink-0">
-            <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create Weekend</CardTitle>
-              <CardDescription className="text-sm font-light">Add a new academy weekend</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CreateWeekendForm />
-            </CardContent>
-          </Card>
+          <div className="w-full lg:w-[380px] lg:sticky lg:top-6 order-1 lg:order-2 shrink-0 space-y-6">
+            <Card className="luxury-card border-0">
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Quick Actions</CardTitle>
+                <CardDescription className="text-sm font-light">Generate remaining weekends</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <GenerateRemainingButton currentCount={weekends.length} />
+              </CardContent>
+            </Card>
+
+            <Card className="luxury-card border-0">
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create Weekend</CardTitle>
+                <CardDescription className="text-sm font-light">Add a new academy weekend</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CreateWeekendForm />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>

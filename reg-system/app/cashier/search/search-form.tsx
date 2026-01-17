@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getStudentByAdmission } from "@/app/actions/students";
 import { Search } from "lucide-react";
+import { AttendancePassport } from "@/components/attendance-passport";
+import { ProfilePictureDisplay } from "@/components/profile-picture";
 
 export function SearchStudentForm() {
   const [admissionNumber, setAdmissionNumber] = useState("");
@@ -67,23 +69,30 @@ export function SearchStudentForm() {
       </Card>
 
       {student && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3 auto-rows-max">
+          {/* Student Details - Spans 1 column */}
           <Card className="luxury-card border-0">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl font-light tracking-tight">Student Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Profile Picture */}
+              <div className="flex justify-center mb-4">
+                <ProfilePictureDisplay
+                  admissionNumber={student.admissionNumber}
+                  gender={student.gender}
+                  size="lg"
+                />
+              </div>
+
+              <div className="text-center mb-4">
+                <div className="text-lg font-bold tracking-tight">{student.fullName}</div>
+                <div className="text-sm text-muted-foreground">{student.admissionNumber}</div>
+              </div>
+
+              <div className="h-[1px] bg-border/40 w-full" />
+
               <div className="grid gap-3">
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Admission Number:</span>
-                  <span className="text-sm font-medium">{student.admissionNumber}</span>
-                </div>
-
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Full Name:</span>
-                  <span className="text-sm font-medium">{student.fullName}</span>
-                </div>
-
                 <div className="flex justify-between py-2 border-b">
                   <span className="text-sm text-muted-foreground">Gender:</span>
                   <Badge variant={student.gender === "MALE" ? "default" : "secondary"} className="text-xs">
@@ -119,38 +128,25 @@ export function SearchStudentForm() {
             </CardContent>
           </Card>
 
-          <Card className="luxury-card border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-light tracking-tight">Attendance History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {student.attendances.length === 0 ? (
-                <div className="text-center text-muted-foreground py-12">
-                  No attendance records yet
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {student.attendances.slice(0, 10).map((att: any) => (
-                    <div key={att.id} className="border rounded-lg p-3 space-y-2 hover:bg-accent/50 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div className="text-sm font-medium">{att.session.weekend.name}</div>
-                        <Badge className="text-xs">{att.session.sessionType}</Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {att.session.name} ({att.session.day})
-                      </div>
-                      {att.class && (
-                        <div className="text-xs">Class: {att.class.name}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(att.markedAt).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Chapel Passport - Spans 1 column on lg, 2 on xl */}
+          <div className="xl:col-span-2">
+            <AttendancePassport
+              attendances={student.attendances}
+              weekends={student.weekends}
+              type="CHAPEL"
+              studentId={student.id}
+            />
+          </div>
+
+          {/* CLASS PASSPORT - COMMENTED OUT FOR CHAPEL-ONLY MODE */}
+          {/* <div className="lg:col-span-2 xl:col-span-3">
+            <AttendancePassport
+              attendances={student.attendances}
+              weekends={student.weekends}
+              type="CLASS"
+              studentId={student.id}
+            />
+          </div> */}
         </div>
       )}
     </div>

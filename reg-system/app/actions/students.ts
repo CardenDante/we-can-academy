@@ -57,7 +57,7 @@ export async function getStudentByAdmission(admissionNumber: string) {
     throw new Error("Unauthorized");
   }
 
-  return await prisma.student.findUnique({
+  const student = await prisma.student.findUnique({
     where: { admissionNumber },
     include: {
       course: true,
@@ -74,6 +74,18 @@ export async function getStudentByAdmission(admissionNumber: string) {
       },
     },
   });
+
+  if (!student) return null;
+
+  // Fetch all weekends for passport display
+  const weekends = await prisma.weekend.findMany({
+    orderBy: { saturdayDate: "asc" },
+  });
+
+  return {
+    ...student,
+    weekends,
+  };
 }
 
 export async function deleteStudent(id: string) {

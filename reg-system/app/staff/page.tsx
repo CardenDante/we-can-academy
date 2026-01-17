@@ -12,13 +12,12 @@ export default async function StaffPage() {
     redirect("/");
   }
 
-  // Fetch statistics
-  const [totalAttendance, classAttendance, chapelAttendance, recentSessions] = await Promise.all([
-    prisma.attendance.count(),
+  // Fetch statistics - Chapel only (class features commented out)
+  const [totalAttendance, chapelAttendance] = await Promise.all([
     prisma.attendance.count({
       where: {
         session: {
-          sessionType: "CLASS",
+          sessionType: "CHAPEL",
         },
       },
     }),
@@ -29,10 +28,19 @@ export default async function StaffPage() {
         },
       },
     }),
+    /* Commented out - class features disabled
+    prisma.attendance.count({
+      where: {
+        session: {
+          sessionType: "CLASS",
+        },
+      },
+    }),
     prisma.session.count(),
+    */
   ]);
 
-  // Get today's attendance
+  // Get today's chapel attendance
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayAttendance = await prisma.attendance.count({
@@ -40,9 +48,13 @@ export default async function StaffPage() {
       markedAt: {
         gte: today,
       },
+      session: {
+        sessionType: "CHAPEL",
+      },
     },
   });
 
+  /* Commented out - class-related statistics disabled
   const statistics = [
     {
       title: "Today's Attendance",
@@ -73,6 +85,7 @@ export default async function StaffPage() {
       bgColor: "bg-indigo-50 dark:bg-indigo-950/20",
     },
   ];
+  */
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,10 +93,10 @@ export default async function StaffPage() {
       <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-8 sm:mb-12">
           <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
-            Attendance Management
+            Chapel Attendance
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">
-            Mark student attendance for classes and chapel sessions
+            Mark student attendance for chapel sessions
           </p>
         </div>
 
