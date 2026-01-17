@@ -148,18 +148,21 @@ export function SessionsByCourseView({
     }
   });
 
+  // Filter to only show chapel sessions
+  const chapelOnlyTemplates = uniqueTemplates.filter(t => t.sessionType === "CHAPEL");
+
   return (
     <Card className="luxury-card border-0">
       <CardHeader className="pb-4 sm:pb-6">
-        <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">All Sessions</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Chapel Sessions</CardTitle>
         <CardDescription className="text-sm font-light">
-          Organized by Course → Class → Day
+          Organized by Day
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {sessions.length === 0 && (
+        {chapelOnlyTemplates.length === 0 && (
           <div className="text-center text-muted-foreground py-12">
-            No sessions created yet
+            No chapel sessions created yet
           </div>
         )}
 
@@ -191,7 +194,7 @@ export function SessionsByCourseView({
           </Card>
         )}
 
-        {/* Course-based CLASS Sessions */}
+        {/* Course-based CLASS Sessions - Commented out for chapel-only mode
         {courses.map((course) => {
           const courseData = groupedData[course.id];
           if (!courseData) return null;
@@ -268,8 +271,9 @@ export function SessionsByCourseView({
             </Card>
           );
         })}
+        */}
 
-        {/* Unassigned CLASS Sessions */}
+        {/* Unassigned CLASS Sessions - Commented out for chapel-only mode
         {groupedData["unassigned"] && (
           <Card className="border-2 border-destructive/50">
             <CardHeader className="pb-3 bg-destructive/10">
@@ -296,6 +300,7 @@ export function SessionsByCourseView({
             </CardContent>
           </Card>
         )}
+        */}
       </CardContent>
     </Card>
   );

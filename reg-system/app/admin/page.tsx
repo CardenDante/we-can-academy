@@ -9,21 +9,25 @@ export default async function AdminPage() {
   const user = await getUser();
   if (!user) return null;
 
-  // Fetch statistics
+  // Fetch statistics - Classes commented out (chapel-only mode)
   const [
     totalStudents,
     totalUsers,
     totalCourses,
-    totalClasses,
+    // totalClasses, // Commented out - class features disabled
     totalWeekends,
     totalSessions,
   ] = await Promise.all([
     prisma.student.count(),
     prisma.user.count(),
     prisma.course.count(),
-    prisma.class.count(),
+    // prisma.class.count(), // Commented out - class features disabled
     prisma.weekend.count(),
-    prisma.session.count(),
+    prisma.session.count({
+      where: {
+        sessionType: "CHAPEL", // Only count chapel sessions
+      },
+    }),
   ]);
 
   const statistics = [
@@ -48,6 +52,7 @@ export default async function AdminPage() {
       color: "text-emerald-500",
       bgColor: "bg-emerald-50 dark:bg-emerald-950/20",
     },
+    /* Commented out - class features disabled
     {
       title: "Total Classes",
       value: totalClasses,
@@ -55,6 +60,7 @@ export default async function AdminPage() {
       color: "text-amber-500",
       bgColor: "bg-amber-50 dark:bg-amber-950/20",
     },
+    */
     {
       title: "Total Weekends",
       value: totalWeekends,
@@ -63,7 +69,7 @@ export default async function AdminPage() {
       bgColor: "bg-rose-50 dark:bg-rose-950/20",
     },
     {
-      title: "Total Sessions",
+      title: "Chapel Sessions",
       value: totalSessions,
       icon: Settings,
       color: "text-indigo-500",
@@ -93,6 +99,7 @@ export default async function AdminPage() {
       icon: BookOpen,
       color: "text-emerald-500",
     },
+    /* Commented out - class features disabled
     {
       title: "Classes",
       description: "Manage class divisions (A, B, C)",
@@ -100,6 +107,7 @@ export default async function AdminPage() {
       icon: ClipboardList,
       color: "text-amber-500",
     },
+    */
     {
       title: "Weekends",
       description: "Manage academy weekends",
@@ -108,8 +116,8 @@ export default async function AdminPage() {
       color: "text-rose-500",
     },
     {
-      title: "Sessions",
-      description: "Manage sessions and assignments",
+      title: "Chapel Sessions",
+      description: "Manage chapel sessions",
       href: "/admin/sessions",
       icon: Settings,
       color: "text-indigo-500",

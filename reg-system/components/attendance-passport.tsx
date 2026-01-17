@@ -146,6 +146,7 @@ function ChapelPassport({
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
       {weekends.map((weekend) => {
         const attendance = getAttendanceForWeekend(weekend.id);
+        const saturdayDate = new Date(weekend.saturdayDate);
         const sundayDate = new Date(weekend.saturdayDate);
         sundayDate.setDate(sundayDate.getDate() + 1);
         sundayDate.setHours(0, 0, 0, 0);
@@ -153,12 +154,27 @@ function ChapelPassport({
         const isPresent = !!attendance;
         const isAbsent = hasPassed && !attendance;
 
+        // Use actual attendance date if present, otherwise show default Saturday date
+        const displayDate = attendance
+          ? new Date(attendance.markedAt)
+          : saturdayDate;
+        const dateDisplay = displayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+        // Format time for watermark (e.g., "8:45am")
+        const timeWatermark = attendance
+          ? new Date(attendance.markedAt).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            }).toLowerCase()
+          : null;
+
         return (
           <div key={weekend.id} className="flex flex-col items-center gap-2">
             <div
               className={`
                 w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 flex items-center justify-center
-                transition-all
+                transition-all relative overflow-hidden
                 ${
                   isPresent
                     ? "border-green-500 bg-green-50 dark:bg-green-950/20"
@@ -169,7 +185,18 @@ function ChapelPassport({
               `}
             >
               {isPresent ? (
-                <Check className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 font-bold stroke-[3]" />
+                <>
+                  {/* Timestamp watermark in background */}
+                  {timeWatermark && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[11px] sm:text-xs font-semibold text-black/30 dark:text-black/30 select-none">
+                        {timeWatermark}
+                      </span>
+                    </div>
+                  )}
+                  {/* Check icon on top */}
+                  <Check className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 font-bold stroke-[3] relative z-10" />
+                </>
               ) : isAbsent ? (
                 <X className="w-8 h-8 sm:w-10 sm:h-10 text-destructive stroke-[3]" />
               ) : (
@@ -177,7 +204,8 @@ function ChapelPassport({
               )}
             </div>
             <div className="text-center">
-              <div className="text-xs font-medium">{weekend.name.replace("Weekend ", "W")}</div>
+              <div className="text-xs font-medium">{weekend.name.replace("Weekend ", "WK ")}</div>
+              <div className="text-[10px] text-muted-foreground">{dateDisplay}</div>
               {attendance && (
                 <div className="text-[10px] text-muted-foreground">
                   {attendance.session.day.slice(0, 3)}

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { getStudentByAdmission } from "@/app/actions/students";
 import { Search } from "lucide-react";
 import { AttendancePassport } from "@/components/attendance-passport";
+import { ProfilePictureDisplay } from "@/components/profile-picture";
 
 export function SearchStudentForm() {
   const [admissionNumber, setAdmissionNumber] = useState("");
@@ -75,17 +76,23 @@ export function SearchStudentForm() {
               <CardTitle className="text-xl font-light tracking-tight">Student Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Profile Picture */}
+              <div className="flex justify-center mb-4">
+                <ProfilePictureDisplay
+                  admissionNumber={student.admissionNumber}
+                  gender={student.gender}
+                  size="lg"
+                />
+              </div>
+
+              <div className="text-center mb-4">
+                <div className="text-lg font-bold tracking-tight">{student.fullName}</div>
+                <div className="text-sm text-muted-foreground">{student.admissionNumber}</div>
+              </div>
+
+              <div className="h-[1px] bg-border/40 w-full" />
+
               <div className="grid gap-3">
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Admission Number:</span>
-                  <span className="text-sm font-medium">{student.admissionNumber}</span>
-                </div>
-
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Full Name:</span>
-                  <span className="text-sm font-medium">{student.fullName}</span>
-                </div>
-
                 <div className="flex justify-between py-2 border-b">
                   <span className="text-sm text-muted-foreground">Gender:</span>
                   <Badge variant={student.gender === "MALE" ? "default" : "secondary"} className="text-xs">
@@ -131,15 +138,15 @@ export function SearchStudentForm() {
             />
           </div>
 
-          {/* Class Passport - Spans full width on all screens */}
-          <div className="lg:col-span-2 xl:col-span-3">
+          {/* CLASS PASSPORT - COMMENTED OUT FOR CHAPEL-ONLY MODE */}
+          {/* <div className="lg:col-span-2 xl:col-span-3">
             <AttendancePassport
               attendances={student.attendances}
               weekends={student.weekends}
               type="CLASS"
               studentId={student.id}
             />
-          </div>
+          </div> */}
         </div>
       )}
     </div>

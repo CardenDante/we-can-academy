@@ -18,7 +18,7 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
-  const [selectedType, setSelectedType] = useState("");
+  // const [selectedType, setSelectedType] = useState(""); // Commented out - chapel only mode
   const [formKey, setFormKey] = useState(0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -30,23 +30,23 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
     const formData = new FormData(e.currentTarget);
     const data = {
       day: selectedDay as "SATURDAY" | "SUNDAY",
-      sessionType: selectedType as "CLASS" | "CHAPEL",
+      sessionType: "CHAPEL" as "CLASS" | "CHAPEL", // Fixed to CHAPEL only
       name: formData.get("name") as string,
       startTime: formData.get("startTime") as string,
       endTime: formData.get("endTime") as string,
     };
 
-    if (!data.day || !data.sessionType) {
-      setError("Please fill in all required fields");
+    if (!data.day) {
+      setError("Please select a day");
       setLoading(false);
       return;
     }
 
     try {
       await createSession(data);
-      setSuccess(`Session created for all ${weekends.length} weekends!`);
+      setSuccess(`Chapel session created for all ${weekends.length} weekends!`);
       setSelectedDay("");
-      setSelectedType("");
+      // setSelectedType(""); // Commented out - chapel only mode
       setFormKey(prev => prev + 1);
       setTimeout(() => setSuccess(""), 5000);
     } catch (err: any) {
@@ -59,7 +59,7 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
   return (
     <form key={formKey} onSubmit={handleSubmit} className="space-y-4">
       <div className="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm rounded-md">
-        💡 This session will be created for all {weekends.length} weekends automatically
+        This chapel session will be created for all {weekends.length} weekends automatically
       </div>
 
       <div>
@@ -74,6 +74,7 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
           </SelectContent>
         </Select>
       </div>
+      {/* Session Type dropdown - Commented out for chapel-only mode
       <div>
         <Label htmlFor="sessionType">Session Type</Label>
         <Select value={selectedType} onValueChange={setSelectedType} required>
@@ -86,6 +87,7 @@ export function CreateSessionForm({ weekends }: { weekends: Weekend[] }) {
           </SelectContent>
         </Select>
       </div>
+      */}
       <div>
         <Label htmlFor="name">Session Name</Label>
         <Input id="name" name="name" placeholder="e.g. Morning Session" required />

@@ -9,16 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCourses } from "@/app/actions/academy";
 import { registerStudent } from "@/app/actions/students";
-import { 
-  User, 
-  Hash, 
-  CreditCard, 
-  Phone, 
-  MapPin, 
-  BookOpen, 
+import { ProfilePictureUpload, saveProfilePicture } from "@/components/profile-picture";
+import {
+  User,
+  Hash,
+  CreditCard,
+  Phone,
+  MapPin,
+  BookOpen,
   Loader2,
   CheckCircle2,
-  ArrowLeft 
+  ArrowLeft,
+  Camera
 } from "lucide-react";
 
 export function RegisterStudentForm() {
@@ -27,9 +29,10 @@ export function RegisterStudentForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [selectedGender, setSelectedGender] = useState("");
+  const [selectedGender, setSelectedGender] = useState<"MALE" | "FEMALE" | "">("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [formKey, setFormKey] = useState(0);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadCourses();
@@ -69,9 +72,16 @@ export function RegisterStudentForm() {
 
     try {
       await registerStudent(data);
+
+      // Save profile picture to localStorage if provided
+      if (profileImage && data.admissionNumber) {
+        saveProfilePicture(data.admissionNumber, profileImage);
+      }
+
       setSuccess("Student registered successfully!");
       setSelectedGender("");
       setSelectedCourse("");
+      setProfileImage(null);
       setFormKey(prev => prev + 1);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
@@ -110,7 +120,23 @@ export function RegisterStudentForm() {
       
       <CardContent className="px-8 py-8">
         <form key={formKey} onSubmit={handleSubmit} className="space-y-8">
-          
+
+          {/* Section 0: Profile Picture (Optional) */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Camera className="w-3 h-3" /> Profile Picture (Optional)
+            </h3>
+            <div className="flex justify-center py-4">
+              <ProfilePictureUpload
+                onImageCapture={setProfileImage}
+                initialImage={profileImage}
+                gender={selectedGender}
+              />
+            </div>
+          </div>
+
+          <div className="h-[1px] bg-border/40 w-full" />
+
           {/* Section 1: Personal Details */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
@@ -128,7 +154,7 @@ export function RegisterStudentForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender</Label>
-                <Select value={selectedGender} onValueChange={setSelectedGender} required>
+                <Select value={selectedGender} onValueChange={(v) => setSelectedGender(v as "MALE" | "FEMALE")} required>
                   <SelectTrigger className="pl-3">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
