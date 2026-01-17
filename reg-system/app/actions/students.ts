@@ -12,6 +12,7 @@ export async function registerStudent(data: {
   phoneNumber: string;
   identification: string;
   admissionNumber: string;
+  profilePicture?: string;
 }) {
   const currentUser = await getUser();
   if (!currentUser || (currentUser.role !== "CASHIER" && currentUser.role !== "ADMIN")) {
@@ -94,7 +95,74 @@ export async function deleteStudent(id: string) {
     throw new Error("Unauthorized");
   }
 
+  // Get student to check for profile picture
+  const student = await prisma.student.findUnique({
+    where: { id },
+    select: { profilePicture: true },
+  });
+
+  // Delete profile picture file if it exists
+  if (student?.profilePicture) {
+    try {
+      const { unlink } = await import("fs/promises");
+      const { join } = await import("path");
+      const filePath = join(process.cwd(), "public", student.profilePicture);
+      await unlink(filePath);
+    } catch (error) {
+      console.log("Failed to delete profile picture file:", error);
+      // Continue with student deletion even if file deletion fails
+    }
+  }
+
   await prisma.student.delete({ where: { id } });
   revalidatePath("/admin/students");
   revalidatePath("/cashier/students");
+}
+
+export async function updateProfilePicture(studentId: string, profilePictureUrl: string) {
+  const currentUser = await getUser();
+  if (!currentUser || (currentUser.role !== "CASHIER" && currentUser.role !== "ADMIN")) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.student.update({
+    where: { id: studentId },
+    data: { profilePicture: profilePictureUrl },
+  });
+
+  revalidatePath("/cashier");
+  revalidatePath("/cashier/students");
+  revalidatePath("/security");
+}
+
+export async function deleteProfilePicture(studentId: string) {
+  const currentUser = await getUser();
+  if (!currentUser || (currentUser.role !== "CASHIER" && currentUser.role !== "ADMIN")) {
+    throw new Error("Unauthorized");
+  }
+
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { profilePicture: true },
+  });
+
+  if (student?.profilePicture) {
+    try {
+      const { unlink } = await import("fs/promises");
+      const { join } = await import("path");
+      const filePath = join(process.cwd(), "public", student.profilePicture);
+      await unlink(filePath);
+    } catch (error) {
+      console.log("Failed to delete profile picture file:", error);
+    }
+  }
+
+  await prisma.student.update({
+    where: { id: studentId },
+    data: { profilePicture: null },
+  });
+
+  revalidatePath("/cashier");
+  revalidatePath("/cashier/students");
+  revalidatePath("/security");
 }

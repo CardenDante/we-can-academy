@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCourses } from "@/app/actions/academy";
 import { registerStudent } from "@/app/actions/students";
-import { ProfilePictureUpload, saveProfilePicture } from "@/components/profile-picture";
+import { ProfilePictureUpload, uploadProfilePicture } from "@/components/profile-picture";
 import {
   User,
   Hash,
@@ -33,6 +33,7 @@ export function RegisterStudentForm() {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [formKey, setFormKey] = useState(0);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadCourses();
@@ -71,17 +72,24 @@ export function RegisterStudentForm() {
     }
 
     try {
-      await registerStudent(data);
+      const student = await registerStudent(data);
 
-      // Save profile picture to localStorage if provided
-      if (profileImage && data.admissionNumber) {
-        saveProfilePicture(data.admissionNumber, profileImage);
+      // Upload profile picture if provided
+      if (profileImageFile && student.id) {
+        try {
+          await uploadProfilePicture(student.id, profileImageFile);
+        } catch (uploadErr: any) {
+          console.error("Profile picture upload failed:", uploadErr);
+          // Don't fail the whole registration if picture upload fails
+          setError(`Student registered, but profile picture upload failed: ${uploadErr.message}`);
+        }
       }
 
       setSuccess("Student registered successfully!");
       setSelectedGender("");
       setSelectedCourse("");
       setProfileImage(null);
+      setProfileImageFile(null);
       setFormKey(prev => prev + 1);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
@@ -128,7 +136,10 @@ export function RegisterStudentForm() {
             </h3>
             <div className="flex justify-center py-4">
               <ProfilePictureUpload
-                onImageCapture={setProfileImage}
+                onImageCapture={(imageData, file) => {
+                  setProfileImage(imageData);
+                  setProfileImageFile(file || null);
+                }}
                 initialImage={profileImage}
                 gender={selectedGender}
               />

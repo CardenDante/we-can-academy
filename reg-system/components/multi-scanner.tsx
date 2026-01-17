@@ -146,19 +146,68 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
       setScanMode("nfc");
 
       ndef.onreading = (event) => {
-        // Try to read text from NFC tag
+        console.log("NFC tag detected:", event);
+
+        // Try to extract data from various record types
+        let extractedData = "";
+
         for (const record of event.message.records) {
+          console.log("Record type:", record.recordType, "Data:", record.data);
+
+          // Handle text records
           if (record.recordType === "text") {
             const decoder = new TextDecoder();
             const text = decoder.decode(record.data);
-            handleScan(text);
-            return;
+            extractedData = text;
+            break;
+          }
+
+          // Handle URL records (common in NFC cards)
+          if (record.recordType === "url") {
+            const decoder = new TextDecoder();
+            const url = decoder.decode(record.data);
+            // Extract admission number from URL if present
+            // Example: https://wecan.edu/student/12345 -> extract 12345
+            const match = url.match(/\d+/);
+            if (match) {
+              extractedData = match[0];
+              break;
+            }
+          }
+
+          // Handle absolute-url records
+          if (record.recordType === "absolute-url") {
+            const decoder = new TextDecoder();
+            const url = decoder.decode(record.data);
+            const match = url.match(/\d+/);
+            if (match) {
+              extractedData = match[0];
+              break;
+            }
+          }
+
+          // Handle external type records
+          if (record.recordType.includes("external") || record.recordType.includes("mime")) {
+            const decoder = new TextDecoder();
+            try {
+              const text = decoder.decode(record.data);
+              extractedData = text;
+              break;
+            } catch (e) {
+              console.error("Failed to decode external record:", e);
+            }
           }
         }
 
-        // If no text record, use serial number as fallback
-        if (event.serialNumber) {
-          handleScan(event.serialNumber);
+        // Use extracted data if found, otherwise use serial number
+        if (extractedData) {
+          handleScan(extractedData.trim());
+        } else if (event.serialNumber) {
+          // Format serial number to remove colons and make it usable
+          const formattedSerial = event.serialNumber.replace(/:/g, "");
+          handleScan(formattedSerial);
+        } else {
+          setNfcError("Could not read data from NFC card");
         }
       };
 

@@ -69,6 +69,8 @@ services:
       UV_THREADPOOL_SIZE: 16
     ports:
       - "3000:3000"
+    volumes:
+      - profile-pictures:/app/public/uploads/profile-pictures
     # Resource limits for production
     deploy:
       resources:
@@ -96,4 +98,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  profile-pictures:
     driver: local

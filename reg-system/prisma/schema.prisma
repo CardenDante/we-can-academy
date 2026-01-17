@@ -121,6 +121,7 @@ model Student {
   areaOfResidence String
   phoneNumber     String
   identification  String
+  profilePicture  String?      // URL path to profile picture
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   attendances     Attendance[]

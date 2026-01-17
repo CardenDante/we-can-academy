@@ -4,23 +4,35 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, X, User } from "lucide-react";
 
-// localStorage helper functions for profile pictures
-export function saveProfilePicture(admissionNumber: string, imageData: string) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(`profile_${admissionNumber}`, imageData);
+// Profile picture upload helper function
+export async function uploadProfilePicture(studentId: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("studentId", studentId);
+
+  const response = await fetch("/api/students/profile-picture", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to upload profile picture");
   }
+
+  const data = await response.json();
+  return data.profilePictureUrl;
 }
 
-export function getProfilePicture(admissionNumber: string): string | null {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem(`profile_${admissionNumber}`);
-  }
-  return null;
-}
+// Profile picture delete helper function
+export async function deleteProfilePicture(studentId: string): Promise<void> {
+  const response = await fetch(`/api/students/profile-picture?studentId=${studentId}`, {
+    method: "DELETE",
+  });
 
-export function removeProfilePicture(admissionNumber: string) {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(`profile_${admissionNumber}`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to delete profile picture");
   }
 }
 
@@ -106,38 +118,31 @@ export function FemaleAvatar({ className = "" }: { className?: string }) {
 }
 
 interface ProfilePictureDisplayProps {
-  admissionNumber: string;
+  profilePictureUrl?: string | null;
   gender: "MALE" | "FEMALE";
   size?: "sm" | "md" | "lg";
   className?: string;
 }
 
 export function ProfilePictureDisplay({
-  admissionNumber,
+  profilePictureUrl,
   gender,
   size = "md",
   className = "",
 }: ProfilePictureDisplayProps) {
-  const [profilePic, setProfilePic] = useState<string | null>(null);
-
-  useEffect(() => {
-    const pic = getProfilePicture(admissionNumber);
-    setProfilePic(pic);
-  }, [admissionNumber]);
-
   const sizeClasses = {
     sm: "w-16 h-16",
     md: "w-24 h-24",
     lg: "w-32 h-32",
   };
 
-  if (profilePic) {
+  if (profilePictureUrl) {
     return (
       <div
         className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-white shadow-lg ${className}`}
       >
         <img
-          src={profilePic}
+          src={profilePictureUrl}
           alt="Profile"
           className="w-full h-full object-cover"
         />
@@ -166,7 +171,7 @@ export function ProfilePictureDisplay({
 }
 
 interface ProfilePictureUploadProps {
-  onImageCapture: (imageData: string | null) => void;
+  onImageCapture: (imageData: string | null, file?: File | null) => void;
   initialImage?: string | null;
   gender?: "MALE" | "FEMALE" | "";
 }
@@ -179,6 +184,7 @@ export function ProfilePictureUpload({
   const [preview, setPreview] = useState<string | null>(initialImage);
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -231,10 +237,16 @@ export function ProfilePictureUpload({
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
 
-        // Convert to base64 with compression
-        const imageData = canvas.toDataURL("image/jpeg", 0.7);
-        setPreview(imageData);
-        onImageCapture(imageData);
+        // Convert to base64 and blob/file
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], "profile-picture.jpg", { type: "image/jpeg" });
+            const imageData = canvas.toDataURL("image/jpeg", 0.7);
+            setPreview(imageData);
+            setCapturedFile(file);
+            onImageCapture(imageData, file);
+          }
+        }, "image/jpeg", 0.7);
         stopCamera();
       }
     }
@@ -274,9 +286,16 @@ export function ProfilePictureUpload({
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, width, height);
 
-          const compressedData = canvas.toDataURL("image/jpeg", 0.7);
-          setPreview(compressedData);
-          onImageCapture(compressedData);
+          // Convert to both base64 and File object
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, { type: "image/jpeg" });
+              const compressedData = canvas.toDataURL("image/jpeg", 0.7);
+              setPreview(compressedData);
+              setCapturedFile(compressedFile);
+              onImageCapture(compressedData, compressedFile);
+            }
+          }, "image/jpeg", 0.7);
         };
         img.src = reader.result as string;
       };
@@ -286,7 +305,8 @@ export function ProfilePictureUpload({
 
   const removeImage = () => {
     setPreview(null);
-    onImageCapture(null);
+    setCapturedFile(null);
+    onImageCapture(null, null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

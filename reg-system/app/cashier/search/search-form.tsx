@@ -79,7 +79,7 @@ export function SearchStudentForm() {
               {/* Profile Picture */}
               <div className="flex justify-center mb-4">
                 <ProfilePictureDisplay
-                  admissionNumber={student.admissionNumber}
+                  profilePictureUrl={student.profilePicture}
                   gender={student.gender}
                   size="lg"
                 />
