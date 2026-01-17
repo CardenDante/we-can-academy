@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wecanacademy-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wecanacademy
+      POSTGRES_PASSWORD: wecanacademy123
+      POSTGRES_DB: wecanacademy
+      POSTGRES_MAX_CONNECTIONS: 200
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 16MB
+    ports:
+      - "5433:5432"  # Changed to 5433 to avoid conflict with mahanaim-db on 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wecanacademy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wecanacademy-network
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=16MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wecanacademy-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public&connection_limit=50&pool_timeout=10"
+      DIRECT_DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
+      NEXTAUTH_SECRET: "change-this-secret-in-production-to-a-random-string"
+      NEXTAUTH_URL: "https://wecan.iyfkenya.org"
+      AUTH_TRUST_HOST: "true"
+      NODE_ENV: "production"
+      UV_THREADPOOL_SIZE: 16
+    ports:
+      - "3001:3000"  # Expose on port 3001 for gnm_nginx to reach
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/auth/session', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - wecanacademy-network
+
+networks:
+  wecanacademy-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
