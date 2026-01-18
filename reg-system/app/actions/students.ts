@@ -167,6 +167,55 @@ export async function getStudentByAdmissionWithHistory(admissionNumber: string) 
   };
 }
 
+/**
+ * Get student by ID with full history - for admin detail page
+ * Includes attendance history, weekends, and check-in records
+ */
+export async function getStudentByIdWithHistory(id: string) {
+  const currentUser = await getUser();
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    throw new Error("Only administrators can view detailed student profiles.");
+  }
+
+  const student = await prisma.student.findUnique({
+    where: { id },
+    include: {
+      course: true,
+      attendances: {
+        include: {
+          session: {
+            include: {
+              weekend: true,
+            },
+          },
+          class: true,
+        },
+        orderBy: { markedAt: "desc" },
+        take: 100, // More records for admin analytics
+      },
+      checkIns: {
+        include: {
+          weekend: true,
+        },
+        orderBy: { checkedAt: "desc" },
+        take: 50, // Last 50 check-ins
+      },
+    },
+  });
+
+  if (!student) return null;
+
+  // Fetch all weekends for full analytics
+  const weekends = await prisma.weekend.findMany({
+    orderBy: { saturdayDate: "asc" },
+  });
+
+  return {
+    ...student,
+    weekends,
+  };
+}
+
 export async function deleteStudent(id: string) {
   const currentUser = await getUser();
   if (!currentUser || currentUser.role !== "ADMIN") {

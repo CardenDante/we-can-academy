@@ -1,0 +1,16 @@
+{
+  "name": "acr122u-nfc-service",
+  "version": "1.0.0",
+  "description": "Standalone NFC reader service for ACR122U",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "nfc-pcsc": "^0.8.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

@@ -26,19 +26,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { expelStudent, reinstateStudent, deleteStudent } from "@/app/actions/students";
+import { expelStudent, reinstateStudent } from "@/app/actions/students";
 import { ProfilePictureDisplay } from "@/components/profile-picture";
 import {
   ShieldAlert,
   ShieldCheck,
-  Trash2,
   Search,
   Loader2,
   UserX,
-  UserCheck,
-  AlertTriangle
+  UserCheck
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Student = {
   id: string;
@@ -78,10 +77,6 @@ export function StudentsClient({ students: initialStudents }: { students: Studen
   // Reinstate dialog state
   const [reinstateDialogOpen, setReinstateDialogOpen] = useState(false);
   const [studentToReinstate, setStudentToReinstate] = useState<Student | null>(null);
-
-  // Delete dialog state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
   // Filter students based on search
   const filteredStudents = students.filter((student) => {
@@ -142,25 +137,6 @@ export function StudentsClient({ students: initialStudents }: { students: Studen
     }
   };
 
-  // Handle delete
-  const handleDelete = async () => {
-    if (!studentToDelete) return;
-
-    setLoading(studentToDelete.id);
-    setError(null);
-
-    try {
-      await deleteStudent(studentToDelete.id);
-      setStudents(students.filter(s => s.id !== studentToDelete.id));
-      setDeleteDialogOpen(false);
-      setStudentToDelete(null);
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete student");
-    } finally {
-      setLoading(null);
-    }
-  };
 
   const expelledCount = students.filter(s => s.isExpelled).length;
   const activeCount = students.filter(s => !s.isExpelled).length;
@@ -292,7 +268,6 @@ export function StudentsClient({ students: initialStudents }: { students: Studen
                           <Button
                             size="sm"
                             variant="outline"
-                            className="gap-1 text-green-600 border-green-600/20 hover:bg-green-500/10"
                             disabled={loading === student.id}
                             onClick={() => {
                               setStudentToReinstate(student);
@@ -300,17 +275,15 @@ export function StudentsClient({ students: initialStudents }: { students: Studen
                             }}
                           >
                             {loading === student.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <ShieldCheck className="h-3 w-3" />
+                              "Reinstate"
                             )}
-                            <span className="hidden sm:inline">Reinstate</span>
                           </Button>
                         ) : (
                           <Button
                             size="sm"
                             variant="outline"
-                            className="gap-1 text-amber-600 border-amber-600/20 hover:bg-amber-500/10"
                             disabled={loading === student.id}
                             onClick={() => {
                               setStudentToExpel(student);
@@ -318,26 +291,17 @@ export function StudentsClient({ students: initialStudents }: { students: Studen
                             }}
                           >
                             {loading === student.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <ShieldAlert className="h-3 w-3" />
+                              "Expel"
                             )}
-                            <span className="hidden sm:inline">Expel</span>
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 text-destructive border-destructive/20 hover:bg-destructive/10"
-                          disabled={loading === student.id}
-                          onClick={() => {
-                            setStudentToDelete(student);
-                            setDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          <span className="hidden sm:inline">Delete</span>
-                        </Button>
+                        <Link href={`/admin/students/${student.id}`}>
+                          <Button size="sm" variant="outline">
+                            View
+                          </Button>
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -447,38 +411,6 @@ export function StudentsClient({ students: initialStudents }: { students: Studen
                 <ShieldCheck className="h-4 w-4 mr-2" />
               )}
               Reinstate Student
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Delete Student
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to permanently delete {studentToDelete?.fullName}?
-              This action cannot be undone. All attendance records and check-in history
-              for this student will also be deleted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={handleDelete}
-              disabled={loading === studentToDelete?.id}
-            >
-              {loading === studentToDelete?.id ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

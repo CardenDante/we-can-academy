@@ -168,11 +168,23 @@ export function AttendanceClient() {
       // Set scanned student for display (auto-updates each scan)
       setScannedStudent(student);
 
-      await markAttendance({
+      const result = await markAttendance({
         studentId: student.id,
         sessionId: currentSession.id,
         classId: undefined,
       });
+
+      // Check result - server action now returns {success, data/error}
+      if (!result.success) {
+        setError(result.error || "Failed to mark attendance");
+        setScanStatus("error");
+        setAdmissionNumber("");
+        // Re-focus input for next scan
+        setTimeout(() => inputRef.current?.focus(), 100);
+        // Keep error visible longer (5 seconds)
+        setTimeout(() => setError(""), 5000);
+        return;
+      }
 
       setSuccess(`Attendance marked for ${student.fullName}`);
       setScanStatus("success");
@@ -183,12 +195,15 @@ export function AttendanceClient() {
       setTimeout(() => inputRef.current?.focus(), 100);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
-      setError(err.message || "Failed to mark attendance");
+      // Catch any unexpected errors
+      const errorMessage = err?.message || err?.toString() || "Failed to mark attendance";
+      console.error("Attendance marking error:", err);
+      setError(errorMessage);
       setScanStatus("error");
       setAdmissionNumber("");
       // Re-focus input for next scan
       setTimeout(() => inputRef.current?.focus(), 100);
-      // Keep error visible longer (5 seconds instead of clearing immediately)
+      // Keep error visible longer (5 seconds)
       setTimeout(() => setError(""), 5000);
     } finally {
       setLoading(false);
@@ -420,8 +435,53 @@ export function AttendanceClient() {
             ? "border-destructive bg-destructive/5"
             : "border-border"
         }`}>
-          <CardContent className="py-6">
-            <div className="flex items-center gap-6">
+          <CardContent className="py-4 sm:py-6">
+            {/* Mobile Layout: Compact horizontal with centered course */}
+            <div className="flex md:hidden flex-col items-center gap-3">
+              {/* Profile Picture */}
+              <div className={`rounded-full p-1 ${
+                scanStatus === "success" ? "ring-4 ring-green-500/30" : ""
+              }`}>
+                <ProfilePictureDisplay
+                  profilePictureUrl={scannedStudent.profilePicture}
+                  gender={scannedStudent.gender}
+                  size="sm"
+                />
+              </div>
+
+              {/* Name and Admission - Horizontal with separator */}
+              <div className="flex items-center gap-2 text-center">
+                <span className="text-base font-bold tracking-tight">
+                  {scannedStudent.fullName}
+                </span>
+                <div className="h-4 w-[1px] bg-border"></div>
+                <span className="text-sm font-mono font-medium">
+                  #{scannedStudent.admissionNumber}
+                </span>
+              </div>
+
+              {/* Course - Plain text, centered */}
+              <div className="text-sm text-muted-foreground">
+                {scannedStudent.course?.name || "N/A"}
+              </div>
+
+              {/* Status Indicator */}
+              {scanStatus === "success" && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span className="text-xs font-medium text-green-600 uppercase">Marked</span>
+                </div>
+              )}
+              {scanStatus === "error" && (
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <span className="text-xs font-medium text-destructive uppercase">Error</span>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Layout: Horizontal */}
+            <div className="hidden md:flex items-center gap-6">
               {/* Profile Picture - Large display */}
               <div className="shrink-0">
                 <div className={`rounded-full p-1 ${
@@ -482,66 +542,6 @@ export function AttendanceClient() {
         </Card>
       )}
 
-      {currentSession && (
-        <Card className="luxury-card border-0">
-          <CardHeader className="pb-4 sm:pb-6">
-            <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">
-              Recent Attendance
-              <span className="ml-2 text-sm text-muted-foreground font-normal">
-                ({attendances.length} student{attendances.length !== 1 ? "s" : ""})
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 sm:px-6">
-            {attendances.length === 0 ? (
-              <div className="text-center text-muted-foreground py-12">
-                No attendance marked yet
-              </div>
-            ) : (
-              <div className="overflow-x-auto -mx-4 sm:mx-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="pl-4 sm:pl-4">Admission #</TableHead>
-                      <TableHead>Student Name</TableHead>
-                      <TableHead className="hidden sm:table-cell">Course</TableHead>
-                      {/* Class column - commented out for chapel-only mode
-                      {mode === "CLASS" && <TableHead className="hidden md:table-cell">Class</TableHead>}
-                      */}
-                      <TableHead className="hidden lg:table-cell">Marked At</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {attendances.map((att) => (
-                      <TableRow key={att.id}>
-                        <TableCell className="font-medium pl-4 sm:pl-4">
-                          {att.student.admissionNumber}
-                        </TableCell>
-                        <TableCell>{att.student.fullName}</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="outline" className="text-xs">
-                            {att.student.course.name}
-                          </Badge>
-                        </TableCell>
-                        {/* Class column - commented out for chapel-only mode
-                        {mode === "CLASS" && (
-                          <TableCell className="hidden md:table-cell">
-                            {att.class ? att.class.name : "-"}
-                          </TableCell>
-                        )}
-                        */}
-                        <TableCell className="text-muted-foreground text-sm hidden lg:table-cell">
-                          {new Date(att.markedAt).toLocaleTimeString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

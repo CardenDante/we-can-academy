@@ -1,0 +1,41 @@
+# Docker Compose override file for NFC Service
+# Use this to enable ACR122U NFC reader support
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.nfc.yml up
+
+services:
+  # NFC Service for ACR122U Reader
+  nfc-service:
+    build:
+      context: ../nfc-service
+      dockerfile: Dockerfile
+    container_name: wecanacademy-nfc-service-dev
+    restart: unless-stopped
+    environment:
+      NFC_SERVICE_PORT: 3001
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://app:3000,http://localhost:3000}
+    # USB device passthrough for ACR122U reader
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    # Privileged mode required for USB access
+    privileged: true
+    expose:
+      - "3001"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      - frontend
+
+  app:
+    environment:
+      # NFC Service connection
+      NFC_SERVICE_URL: http://nfc-service:3001
+    depends_on:
+      - nfc-service

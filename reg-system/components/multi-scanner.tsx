@@ -4,13 +4,16 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScanLine, Nfc, Loader2, Wifi, WifiOff } from "lucide-react";
+import { ScanLine, Nfc, Loader2, Wifi, WifiOff, CheckCircle } from "lucide-react";
 
 interface MultiScannerProps {
   onScan: (admissionNumber: string) => void;
   disabled?: boolean;
   placeholder?: string;
 }
+
+// ACR122U NFC Reader Support (PC/SC based)
+type NfcReaderType = "web-nfc" | "acr122u" | "none";
 
 // Extend Window interface for Web NFC API
 declare global {
@@ -41,25 +44,53 @@ declare global {
 
 export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or enter admission number..." }: MultiScannerProps) {
   const [inputValue, setInputValue] = useState("");
-  const [nfcSupported, setNfcSupported] = useState(false);
+  const [nfcReaderType, setNfcReaderType] = useState<NfcReaderType>("none");
   const [nfcActive, setNfcActive] = useState(false);
   const [nfcError, setNfcError] = useState("");
+  const [nfcStatus, setNfcStatus] = useState<string>("");
   const [scanMode, setScanMode] = useState<"keyboard" | "nfc">("keyboard");
   const [lastScanTime, setLastScanTime] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const nfcReaderRef = useRef<NDEFReader | null>(null);
+  const pollingRef = useRef<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Barcode scanner detection - scanners type fast and end with Enter
   const keyTimestamps = useRef<number[]>([]);
   const BARCODE_SPEED_THRESHOLD = 50; // ms between keystrokes for barcode scanner
   const BARCODE_MIN_LENGTH = 3; // minimum characters for valid scan
 
-  // Check if Web NFC is supported
+  // Check what NFC readers are available
   useEffect(() => {
+    // Check for Web NFC (mobile browsers)
     if (typeof window !== "undefined" && "NDEFReader" in window) {
-      setNfcSupported(true);
+      setNfcReaderType("web-nfc");
+      return;
     }
+
+    // Check for ACR122U service
+    checkAcr122uService();
   }, []);
+
+  // Check if ACR122U service is available
+  const checkAcr122uService = async () => {
+    try {
+      const response = await fetch("/api/nfc?action=health", {
+        signal: AbortSignal.timeout(3000),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === "ok") {
+          setNfcReaderType("acr122u");
+          setNfcStatus("ACR122U service detected");
+        }
+      }
+    } catch (err) {
+      // ACR122U service not available, that's fine
+      console.log("ACR122U service not available");
+    }
+  };
 
   // Auto-focus input on mount and after each scan
   useEffect(() => {
@@ -84,7 +115,7 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
         inputRef.current?.focus();
       }, 100);
     }
-  }, [lastScanTime, onScan]);
+  }, [lastScanTime, onScan, BARCODE_MIN_LENGTH]);
 
   // Handle keyboard/barcode input
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -127,12 +158,74 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
 
       return () => clearTimeout(timeoutId);
     }
-  }, [inputValue, handleScan]);
+  }, [inputValue, handleScan, BARCODE_SPEED_THRESHOLD]);
 
-  // Start Web NFC scanning
-  const startNfcScan = async () => {
-    if (!nfcSupported || !window.NDEFReader) {
-      setNfcError("NFC not supported on this device");
+  // ACR122U Long-polling loop
+  const startAcr122uPolling = useCallback(async () => {
+    if (pollingRef.current) return;
+    pollingRef.current = true;
+    setNfcActive(true);
+    setNfcError("");
+    setScanMode("nfc");
+
+    while (pollingRef.current) {
+      try {
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        const response = await fetch("/api/nfc?action=poll", {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setNfcError(errorData.error || "NFC service error");
+          break;
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          // Card scanned!
+          const admissionNumber = data.data.admissionNumber;
+          console.log("[ACR122U] Card scanned:", admissionNumber);
+          handleScan(admissionNumber);
+        }
+
+        // Continue polling
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          // Polling was cancelled, that's ok
+          break;
+        }
+
+        console.error("[ACR122U] Polling error:", err);
+        setNfcError("Connection to NFC service lost");
+        break;
+      }
+    }
+
+    pollingRef.current = false;
+    abortControllerRef.current = null;
+  }, [handleScan]);
+
+  const stopAcr122uPolling = useCallback(() => {
+    pollingRef.current = false;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    setNfcActive(false);
+    setScanMode("keyboard");
+    inputRef.current?.focus();
+  }, []);
+
+  // Web NFC scanning
+  const startWebNfcScan = async () => {
+    if (!window.NDEFReader) {
+      setNfcError("Web NFC not supported on this device");
       return;
     }
 
@@ -227,13 +320,42 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
     }
   };
 
-  // Stop NFC scanning
-  const stopNfcScan = () => {
+  const stopWebNfcScan = () => {
     setNfcActive(false);
     setScanMode("keyboard");
     nfcReaderRef.current = null;
     inputRef.current?.focus();
   };
+
+  // Start NFC scanning based on reader type
+  const startNfcScan = async () => {
+    if (nfcReaderType === "web-nfc") {
+      await startWebNfcScan();
+    } else if (nfcReaderType === "acr122u") {
+      await startAcr122uPolling();
+    }
+  };
+
+  // Stop NFC scanning
+  const stopNfcScan = () => {
+    if (nfcReaderType === "web-nfc") {
+      stopWebNfcScan();
+    } else if (nfcReaderType === "acr122u") {
+      stopAcr122uPolling();
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (nfcReaderType === "acr122u" && pollingRef.current) {
+        stopAcr122uPolling();
+      }
+    };
+  }, [nfcReaderType, stopAcr122uPolling]);
+
+  const nfcSupported = nfcReaderType !== "none";
+  const readerTypeLabel = nfcReaderType === "acr122u" ? "ACR122U" : "Web NFC";
 
   return (
     <div className="space-y-4">
@@ -256,17 +378,25 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
             {nfcActive ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" />
-                NFC Active - Tap to stop
+                {readerTypeLabel} Active - Tap to stop
               </>
             ) : (
               <>
                 <Nfc className="h-3 w-3" />
-                Tap to enable NFC
+                Enable {readerTypeLabel} Reader
               </>
             )}
           </Badge>
         )}
       </div>
+
+      {/* NFC Status */}
+      {nfcStatus && !nfcError && (
+        <div className="text-center text-sm text-green-600 bg-green-50 dark:bg-green-950/20 p-2 rounded flex items-center justify-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          {nfcStatus}
+        </div>
+      )}
 
       {/* NFC Error */}
       {nfcError && (
@@ -296,7 +426,7 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <div className="flex items-center gap-2 text-blue-500">
               <Wifi className="h-5 w-5 animate-pulse" />
-              <span className="text-sm">NFC Ready</span>
+              <span className="text-sm">{readerTypeLabel} Ready</span>
             </div>
           </div>
         )}
@@ -306,7 +436,7 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
       <div className="text-center text-xs text-muted-foreground space-y-1">
         <p>Scan barcode, tap NFC card, or type admission number and press Enter</p>
         {nfcSupported && !nfcActive && (
-          <p className="text-blue-500">NFC available - click the badge above to enable</p>
+          <p className="text-blue-500">{readerTypeLabel} available - click the badge above to enable</p>
         )}
       </div>
     </div>
