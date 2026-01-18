@@ -22,7 +22,7 @@ export default async function StudentsListPage() {
         <BackButton href="/cashier" />
 
         <div className="mb-8 sm:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
             All Students
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">
@@ -32,7 +32,7 @@ export default async function StudentsListPage() {
 
         <Card className="luxury-card border-0">
           <CardHeader className="pb-4 sm:pb-6">
-            <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Registered Students</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Registered Students</CardTitle>
             <CardDescription className="text-sm font-light">
               {students.length} student{students.length !== 1 ? "s" : ""} registered
             </CardDescription>

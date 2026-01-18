@@ -24,7 +24,7 @@ export default async function WeekendsPage() {
         <BackButton href="/admin" />
 
         <div className="mb-8 sm:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
             Weekends Management
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">
@@ -35,7 +35,7 @@ export default async function WeekendsPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <Card className="luxury-card border-0 flex-1 order-2 lg:order-1">
             <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">All Weekends</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">All Weekends</CardTitle>
               <CardDescription className="text-sm font-light">
                 {weekends.length} weekend{weekends.length !== 1 ? "s" : ""} scheduled
               </CardDescription>
@@ -89,7 +89,7 @@ export default async function WeekendsPage() {
           <div className="w-full lg:w-[380px] lg:sticky lg:top-6 order-1 lg:order-2 shrink-0 space-y-6">
             <Card className="luxury-card border-0">
               <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Quick Actions</CardTitle>
+                <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Quick Actions</CardTitle>
                 <CardDescription className="text-sm font-light">Generate remaining weekends</CardDescription>
               </CardHeader>
               <CardContent>
@@ -99,7 +99,7 @@ export default async function WeekendsPage() {
 
             <Card className="luxury-card border-0">
               <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create Weekend</CardTitle>
+                <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Create Weekend</CardTitle>
                 <CardDescription className="text-sm font-light">Add a new academy weekend</CardDescription>
               </CardHeader>
               <CardContent>

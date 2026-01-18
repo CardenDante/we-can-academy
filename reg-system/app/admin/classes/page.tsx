@@ -23,7 +23,7 @@ export default async function ClassesPage() {
         <BackButton href="/admin" />
 
         <div className="mb-8 sm:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
             Classes Management
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">
@@ -34,7 +34,7 @@ export default async function ClassesPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <Card className="luxury-card border-0 flex-1 order-2 lg:order-1">
             <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">All Classes</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">All Classes</CardTitle>
               <CardDescription className="text-sm font-light">
                 {classes.length} class{classes.length !== 1 ? "es" : ""} configured
               </CardDescription>
@@ -74,7 +74,7 @@ export default async function ClassesPage() {
 
           <Card className="luxury-card border-0 w-full lg:w-[380px] lg:sticky lg:top-6 order-1 lg:order-2 shrink-0">
             <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create Class</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Create Class</CardTitle>
               <CardDescription className="text-sm font-light">Add a new class division</CardDescription>
             </CardHeader>
             <CardContent>

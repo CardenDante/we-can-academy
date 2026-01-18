@@ -28,7 +28,7 @@ export default async function SessionsPage() {
         <BackButton href="/admin" />
 
         <div className="mb-8 sm:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
             Chapel Sessions
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">
@@ -47,7 +47,7 @@ export default async function SessionsPage() {
 
           <Card className="luxury-card border-0 w-full lg:w-[380px] lg:sticky lg:top-6 order-1 lg:order-2 shrink-0">
             <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create Chapel Session</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Create Chapel Session</CardTitle>
               <CardDescription className="text-sm font-light">Creates chapel session for all {weekends.length} weekends automatically</CardDescription>
             </CardHeader>
             <CardContent>

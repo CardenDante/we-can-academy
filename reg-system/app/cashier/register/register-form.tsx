@@ -100,7 +100,7 @@ export function RegisterStudentForm() {
   }
 
   return (
-    <Card className="w-full max-w-3xl border border-border/50 shadow-xl bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <Card className="w-full max-w-3xl border border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <CardHeader className="space-y-1 border-b border-border/40 px-8 py-6 bg-muted/20">
         
         {/* Back Button */}
@@ -118,7 +118,7 @@ export function RegisterStudentForm() {
 
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold tracking-tight">Register New Student</CardTitle>
+            <CardTitle className="text-base font-medium tracking-tight uppercase">Register New Student</CardTitle>
             <CardDescription className="text-muted-foreground mt-1">
               Enter the student's personal and academic details below.
             </CardDescription>
@@ -241,13 +241,13 @@ export function RegisterStudentForm() {
 
           {/* Feedback Messages */}
           {error && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg flex items-center gap-2">
+            <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-destructive" />
               {error}
             </div>
           )}
           {success && (
-            <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded-lg flex items-center gap-2">
+            <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4" />
               {success}
             </div>

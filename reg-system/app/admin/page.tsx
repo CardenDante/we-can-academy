@@ -129,7 +129,7 @@ export default async function AdminPage() {
       <Header user={{ name: user.name!, role: user.role }} />
       <main className="container mx-auto px-6 py-12">
         <div className="mb-12">
-          <h2 className="text-4xl font-light tracking-tight text-foreground mb-3">
+          <h2 className="text-xl font-medium tracking-tight uppercase text-foreground mb-3">
             Admin Dashboard
           </h2>
           <p className="text-muted-foreground font-light">
@@ -148,10 +148,10 @@ export default async function AdminPage() {
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CardHeader className="pb-4 pt-6">
-                  <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center mb-4`}>
+                  <div className={`w-12 h-12 rounded ${stat.bgColor} flex items-center justify-center mb-4`}>
                     <Icon className={`h-6 w-6 ${stat.color}`} />
                   </div>
-                  <div className="text-3xl font-semibold tracking-tight mb-1">
+                  <div className="text-2xl font-semibold tracking-tight mb-1">
                     {stat.value}
                   </div>
                   <p className="text-xs text-muted-foreground font-light">

@@ -57,7 +57,7 @@ export function SecurityClient() {
           )}
 
           {error && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg text-center flex items-center justify-center gap-2 mt-4">
+            <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded text-center flex items-center justify-center gap-2 mt-4">
               <div className="h-2 w-2 rounded-full bg-destructive" />
               {error}
             </div>
@@ -66,67 +66,63 @@ export function SecurityClient() {
       </Card>
 
       {student && (
-        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3 auto-rows-max">
+        <div className="grid gap-6 lg:grid-cols-3 items-start">
           {/* Student Details - Spans 1 column */}
-          <Card className="luxury-card border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-light tracking-tight">Student Details</CardTitle>
+          <Card className="luxury-card border-0 h-full">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Student Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2">
               {/* Profile Picture */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-2">
                 <ProfilePictureDisplay
                   profilePictureUrl={student.profilePicture}
                   gender={student.gender}
-                  size="lg"
+                  size="md"
                 />
               </div>
 
-              <div className="text-center mb-4">
-                <div className="text-lg font-bold tracking-tight">{student.fullName}</div>
-                <div className="text-sm text-muted-foreground">{student.admissionNumber}</div>
+              {/* Name and Admission Number with vertical separator */}
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <div className="text-center">
+                  <div className="text-base font-bold tracking-tight">{student.fullName}</div>
+                </div>
+                <div className="h-6 w-[1px] bg-border" />
+                <div className="text-center">
+                  <div className="text-sm font-medium">{student.admissionNumber}</div>
+                </div>
               </div>
 
-              <div className="h-[1px] bg-border/40 w-full" />
+              {/* Gender Badge */}
+              <div className="flex justify-center mb-2">
+                <Badge variant={student.gender === "MALE" ? "default" : "secondary"} className="text-xs">
+                  {student.gender}
+                </Badge>
+              </div>
 
-              <div className="grid gap-3">
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Gender:</span>
-                  <Badge variant={student.gender === "MALE" ? "default" : "secondary"} className="text-xs">
-                    {student.gender}
-                  </Badge>
-                </div>
+              <div className="h-[1px] bg-border/40 w-full my-2" />
 
-                <div className="flex justify-between py-2 border-b">
+              <div className="grid gap-1.5">
+                <div className="flex justify-between py-1 border-b">
                   <span className="text-sm text-muted-foreground">Course:</span>
                   <span className="text-sm font-medium">{student.course.name}</span>
                 </div>
 
-                <div className="flex justify-between py-2 border-b">
+                <div className="flex justify-between py-1 border-b">
                   <span className="text-sm text-muted-foreground">Phone:</span>
                   <span className="text-sm">{student.phoneNumber}</span>
                 </div>
 
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-sm text-muted-foreground">Identification:</span>
-                  <span className="text-sm">{student.identification}</span>
-                </div>
-
-                <div className="flex justify-between py-2 border-b">
+                <div className="flex justify-between py-1">
                   <span className="text-sm text-muted-foreground">Area:</span>
                   <span className="text-sm">{student.areaOfResidence}</span>
-                </div>
-
-                <div className="flex justify-between py-2">
-                  <span className="text-sm text-muted-foreground">Registered:</span>
-                  <span className="text-sm">{new Date(student.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Chapel Passport - Spans 1 column on lg, 2 on xl */}
-          <div className="xl:col-span-2">
+          {/* Chapel Passport - Spans 2 columns */}
+          <div className="lg:col-span-2">
             <AttendancePassport
               attendances={student.attendances}
               weekends={student.weekends}

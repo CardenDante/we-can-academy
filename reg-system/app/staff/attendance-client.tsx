@@ -71,6 +71,11 @@ export function AttendanceClient() {
         const sessionEnd = new Date(today);
         sessionEnd.setHours(endHour, endMin, 0, 0);
 
+        // Handle sessions that cross midnight
+        if (sessionEnd <= sessionStart) {
+          sessionEnd.setDate(sessionEnd.getDate() + 1);
+        }
+
         // Check if current time is within session time
         if (now >= sessionStart && now <= sessionEnd) {
           return session;
@@ -223,7 +228,7 @@ export function AttendanceClient() {
       {/* Mode Selection Card - Commented out for chapel-only mode
       <Card className="luxury-card border-0">
         <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Select Attendance Mode</CardTitle>
+          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Select Attendance Mode</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -270,7 +275,7 @@ export function AttendanceClient() {
 
       <Card className="luxury-card border-0">
         <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="text-xl sm:text-2xl font-light tracking-tight flex items-center gap-3">
+          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-3">
             <Church className="h-6 w-6" />
             Mark Chapel Attendance
           </CardTitle>
@@ -278,7 +283,7 @@ export function AttendanceClient() {
         <CardContent>
           {/* Session Status Display - Auto-detected based on current date/time */}
           {sessionError ? (
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-lg flex items-center gap-3 mb-6">
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded flex items-center gap-3 mb-6">
               <AlertCircle className="h-5 w-5 shrink-0" />
               <div>
                 <div className="font-medium">No Active Session</div>
@@ -286,7 +291,7 @@ export function AttendanceClient() {
               </div>
             </div>
           ) : currentSession && (
-            <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 rounded-lg flex items-center gap-3 mb-6">
+            <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 rounded flex items-center gap-3 mb-6">
               <CheckCircle className="h-5 w-5 shrink-0" />
               <div>
                 <div className="font-medium">Active Session</div>
@@ -371,13 +376,13 @@ export function AttendanceClient() {
             </div>
 
             {error && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg flex items-center gap-2">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-destructive" />
                 {error}
               </div>
             )}
             {success && (
-              <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded-lg flex items-center gap-2">
+              <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 {success}
               </div>
@@ -389,7 +394,7 @@ export function AttendanceClient() {
       {currentSession && (
         <Card className="luxury-card border-0">
           <CardHeader className="pb-4 sm:pb-6">
-            <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">
+            <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">
               Recent Attendance
               <span className="ml-2 text-sm text-muted-foreground font-normal">
                 ({attendances.length} student{attendances.length !== 1 ? "s" : ""})

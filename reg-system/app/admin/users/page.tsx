@@ -23,7 +23,7 @@ export default async function UsersPage() {
         <BackButton href="/admin" />
 
         <div className="mb-8 sm:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
             Users Management
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">
@@ -34,7 +34,7 @@ export default async function UsersPage() {
         <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3">
           <Card className="luxury-card border-0 lg:col-span-2 order-2 lg:order-1">
             <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">All Users</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">All Users</CardTitle>
               <CardDescription className="text-sm font-light">
                 {users.length} user{users.length !== 1 ? "s" : ""} in the system
               </CardDescription>
@@ -84,7 +84,7 @@ export default async function UsersPage() {
 
           <Card className="luxury-card border-0 order-1 lg:order-2">
             <CardHeader className="pb-4 sm:pb-6">
-              <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Create User</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Create User</CardTitle>
               <CardDescription className="text-sm font-light">Add a new system user</CardDescription>
             </CardHeader>
             <CardContent>

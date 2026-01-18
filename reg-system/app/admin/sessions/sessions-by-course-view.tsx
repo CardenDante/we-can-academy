@@ -154,7 +154,7 @@ export function SessionsByCourseView({
   return (
     <Card className="luxury-card border-0">
       <CardHeader className="pb-4 sm:pb-6">
-        <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">Chapel Sessions</CardTitle>
+        <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Chapel Sessions</CardTitle>
         <CardDescription className="text-sm font-light">
           Organized by Day
         </CardDescription>
@@ -320,7 +320,7 @@ function DayGroup({
   onToggle: () => void;
 }) {
   return (
-    <div className="border rounded-lg p-3 bg-accent/20">
+    <div className="border rounded p-3 bg-accent/20">
       <Button
         variant="ghost"
         onClick={onToggle}
@@ -340,7 +340,7 @@ function DayGroup({
           {templates.map((template) => (
             <div
               key={template.id}
-              className="border rounded-lg p-3 bg-background space-y-2"
+              className="border rounded p-3 bg-background space-y-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">

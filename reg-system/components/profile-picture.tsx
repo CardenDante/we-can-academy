@@ -139,7 +139,7 @@ export function ProfilePictureDisplay({
   if (profilePictureUrl) {
     return (
       <div
-        className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-white shadow-lg ${className}`}
+        className={`${sizeClasses[size]} rounded-full overflow-hidden ${className}`}
       >
         <img
           src={profilePictureUrl}
@@ -154,7 +154,7 @@ export function ProfilePictureDisplay({
   if (gender === "MALE") {
     return (
       <div
-        className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-white shadow-lg ${className}`}
+        className={`${sizeClasses[size]} rounded-full overflow-hidden ${className}`}
       >
         <MaleAvatar className="w-full h-full" />
       </div>
@@ -163,7 +163,7 @@ export function ProfilePictureDisplay({
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-white shadow-lg ${className}`}
+      className={`${sizeClasses[size]} rounded-full overflow-hidden ${className}`}
     >
       <FemaleAvatar className="w-full h-full" />
     </div>

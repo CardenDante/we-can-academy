@@ -34,7 +34,7 @@ export default async function UnauthorizedPage() {
             </div>
           </CardHeader>
           <CardContent className="pb-8 text-center space-y-4">
-            <div className="p-4 bg-muted/50 rounded-lg">
+            <div className="p-4 bg-muted/50 rounded">
               <p className="text-sm text-muted-foreground">
                 Your role: <span className="font-medium text-foreground">{user.role}</span>
               </p>

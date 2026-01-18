@@ -32,6 +32,7 @@ interface AttendancePassportProps {
 
 export function AttendancePassport({ attendances, weekends, type, studentId }: AttendancePassportProps) {
   // Calculate attendance stats
+
   const getAttendanceForWeekend = (weekendId: string, day?: "SATURDAY" | "SUNDAY") => {
     return attendances.find(
       (att) =>
@@ -104,14 +105,14 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
     <Card className="luxury-card border-0">
       <CardHeader className="pb-4 sm:pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">
+          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">
             {type} Attendance Passport
           </CardTitle>
           <div className="flex gap-3">
             <Badge variant="default" className="bg-green-500">
-              Present: {stats.present}
+              Attended: {stats.present}
             </Badge>
-            <Badge variant="destructive">Absent: {stats.absent}</Badge>
+            <Badge variant="destructive">Missed: {stats.absent}</Badge>
           </div>
         </div>
       </CardHeader>
@@ -143,7 +144,7 @@ function ChapelPassport({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
       {weekends.map((weekend) => {
         const attendance = getAttendanceForWeekend(weekend.id);
         const saturdayDate = new Date(weekend.saturdayDate);
@@ -158,10 +159,14 @@ function ChapelPassport({
         const displayDate = attendance
           ? new Date(attendance.markedAt)
           : saturdayDate;
-        const dateDisplay = displayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-        // Format time for watermark (e.g., "8:45am")
-        const timeWatermark = attendance
+        // Format day and date (e.g., "SUN, JAN 15")
+        const dayName = displayDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+        const monthDay = displayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+        const dateDisplay = `${dayName}, ${monthDay}`;
+
+        // Format time for timestamp at bottom (e.g., "8:45am")
+        const timeStamp = attendance
           ? new Date(attendance.markedAt).toLocaleTimeString("en-US", {
               hour: "numeric",
               minute: "2-digit",
@@ -177,38 +182,26 @@ function ChapelPassport({
                 transition-all relative overflow-hidden
                 ${
                   isPresent
-                    ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                    ? "border-green-500 bg-green-500"
                     : isAbsent
-                    ? "border-destructive bg-destructive/10"
+                    ? "border-red-500 bg-red-500"
                     : "border-border bg-background"
                 }
               `}
             >
               {isPresent ? (
-                <>
-                  {/* Timestamp watermark in background */}
-                  {timeWatermark && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[11px] sm:text-xs font-semibold text-black/30 dark:text-black/30 select-none">
-                        {timeWatermark}
-                      </span>
-                    </div>
-                  )}
-                  {/* Check icon on top */}
-                  <Check className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 font-bold stroke-[3] relative z-10" />
-                </>
+                <Check className="w-8 h-8 sm:w-10 sm:h-10 text-white font-bold stroke-[3]" />
               ) : isAbsent ? (
-                <X className="w-8 h-8 sm:w-10 sm:h-10 text-destructive stroke-[3]" />
+                <X className="w-8 h-8 sm:w-10 sm:h-10 text-white stroke-[3]" />
               ) : (
                 <span className="text-xs text-muted-foreground">-</span>
               )}
             </div>
             <div className="text-center">
-              <div className="text-xs font-medium">{weekend.name.replace("Weekend ", "WK ")}</div>
-              <div className="text-[10px] text-muted-foreground">{dateDisplay}</div>
-              {attendance && (
+              <div className="text-xs font-medium">{dateDisplay}</div>
+              {timeStamp && (
                 <div className="text-[10px] text-muted-foreground">
-                  {attendance.session.day.slice(0, 3)}
+                  {timeStamp}
                 </div>
               )}
             </div>
@@ -246,27 +239,27 @@ function ClassPassport({
         const sunPassed = sundayDate <= today;
 
         return (
-          <div key={weekend.id} className="border rounded-lg p-4">
+          <div key={weekend.id} className="border rounded p-4">
             <div className="text-sm font-medium mb-3">{weekend.name}</div>
             <div className="grid grid-cols-2 gap-4">
               {/* Saturday */}
               <div className="flex items-center gap-3">
                 <div
                   className={`
-                    w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 flex items-center justify-center
+                    w-12 h-12 sm:w-14 sm:h-14 rounded border-2 flex items-center justify-center
                     ${
                       satAttendance
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                        ? "border-green-500 bg-green-500"
                         : satPassed
-                        ? "border-destructive bg-destructive/10"
+                        ? "border-red-500 bg-red-500"
                         : "border-border bg-background"
                     }
                   `}
                 >
                   {satAttendance ? (
-                    <Check className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 stroke-[3]" />
+                    <Check className="w-6 h-6 sm:w-7 sm:h-7 text-white stroke-[3]" />
                   ) : satPassed ? (
-                    <X className="w-6 h-6 sm:w-7 sm:h-7 text-destructive stroke-[3]" />
+                    <X className="w-6 h-6 sm:w-7 sm:h-7 text-white stroke-[3]" />
                   ) : (
                     <span className="text-xs text-muted-foreground">-</span>
                   )}
@@ -283,20 +276,20 @@ function ClassPassport({
               <div className="flex items-center gap-3">
                 <div
                   className={`
-                    w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 flex items-center justify-center
+                    w-12 h-12 sm:w-14 sm:h-14 rounded border-2 flex items-center justify-center
                     ${
                       sunAttendance
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                        ? "border-green-500 bg-green-500"
                         : sunPassed
-                        ? "border-destructive bg-destructive/10"
+                        ? "border-red-500 bg-red-500"
                         : "border-border bg-background"
                     }
                   `}
                 >
                   {sunAttendance ? (
-                    <Check className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 stroke-[3]" />
+                    <Check className="w-6 h-6 sm:w-7 sm:h-7 text-white stroke-[3]" />
                   ) : sunPassed ? (
-                    <X className="w-6 h-6 sm:w-7 sm:h-7 text-destructive stroke-[3]" />
+                    <X className="w-6 h-6 sm:w-7 sm:h-7 text-white stroke-[3]" />
                   ) : (
                     <span className="text-xs text-muted-foreground">-</span>
                   )}

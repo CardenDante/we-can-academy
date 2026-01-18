@@ -111,7 +111,7 @@ export function SessionsGroupedView({
     <div className="space-y-4">
       <Card className="luxury-card border-0">
         <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="text-xl sm:text-2xl font-light tracking-tight">All Sessions</CardTitle>
+          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">All Sessions</CardTitle>
           <CardDescription className="text-sm font-light">
             {sessions.length} session{sessions.length !== 1 ? "s" : ""} configured
           </CardDescription>
@@ -178,7 +178,7 @@ export function SessionsGroupedView({
                           const isCourseExpanded = expandedCourses.has(course.id);
 
                           return (
-                            <div key={course.id} className="border rounded-lg p-3 bg-accent/20">
+                            <div key={course.id} className="border rounded p-3 bg-accent/20">
                               <Button
                                 variant="ghost"
                                 onClick={() => toggleCourse(course.id)}
@@ -257,7 +257,7 @@ function SessionCard({
   showUnassigned?: boolean;
 }) {
   return (
-    <div className="border rounded-lg p-4 bg-background space-y-3">
+    <div className="border rounded p-4 bg-background space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2 flex-wrap">

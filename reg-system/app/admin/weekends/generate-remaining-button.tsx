@@ -45,13 +45,13 @@ export function GenerateRemainingButton({ currentCount }: { currentCount: number
       </Button>
 
       {success && (
-        <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded-lg">
+        <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded">
           {success}
         </div>
       )}
 
       {error && (
-        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg">
+        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded">
           {error}
         </div>
       )}

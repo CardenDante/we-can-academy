@@ -70,7 +70,7 @@ export function SearchStudentForm() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Student Details</CardTitle>
+              <CardTitle className="text-base font-medium tracking-tight uppercase">Student Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
@@ -93,21 +93,15 @@ export function SearchStudentForm() {
                 <div className="text-sm text-muted-foreground">Phone:</div>
                 <div className="text-sm">{student.phoneNumber}</div>
 
-                <div className="text-sm text-muted-foreground">Identification:</div>
-                <div className="text-sm">{student.identification}</div>
-
                 <div className="text-sm text-muted-foreground">Area:</div>
                 <div className="text-sm">{student.areaOfResidence}</div>
-
-                <div className="text-sm text-muted-foreground">Registered:</div>
-                <div className="text-sm">{new Date(student.createdAt).toLocaleDateString()}</div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Attendance History</CardTitle>
+              <CardTitle className="text-base font-medium tracking-tight uppercase">Attendance History</CardTitle>
             </CardHeader>
             <CardContent>
               {student.attendances.length === 0 ? (

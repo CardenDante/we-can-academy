@@ -270,7 +270,7 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
 
       {/* NFC Error */}
       {nfcError && (
-        <div className="text-center text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded-lg">
+        <div className="text-center text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
           {nfcError}
         </div>
       )}

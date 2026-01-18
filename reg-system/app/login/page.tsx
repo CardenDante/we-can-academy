@@ -96,7 +96,7 @@ export default function LoginPage() {
                 </div>
               </div>
               {error && (
-                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg text-center font-medium animate-in fade-in duration-300">
+                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded text-center font-medium animate-in fade-in duration-300">
                   {error}
                 </div>
               )}

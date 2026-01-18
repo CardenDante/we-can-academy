@@ -17,7 +17,7 @@ export default async function SearchStudentsPage() {
         <BackButton href="/cashier" />
 
         <div className="mb-8 sm:mb-12">
-          <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-foreground mb-2 sm:mb-3">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
             Search Students
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">
