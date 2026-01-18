@@ -1,22 +1,175 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: wecanacademy-db
+    container_name: wecanacademy-db-dev
     restart: unless-stopped
     environment:
-      POSTGRES_USER: wecanacademy
-      POSTGRES_PASSWORD: wecanacademy123
-      POSTGRES_DB: wecanacademy
-      # PostgreSQL performance tuning for heavy traffic
-      POSTGRES_MAX_CONNECTIONS: 200
-      POSTGRES_SHARED_BUFFERS: 256MB
-      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
-      POSTGRES_WORK_MEM: 16MB
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-wecanacademy}
+      POSTGRES_DB: ${POSTGRES_DB:-wecanacademy}
+      # SECURITY: Load password from .env file, not hardcoded
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wecanacademy123}
+    # SECURITY: Do NOT expose PostgreSQL port to host in development
+    # Access via app container or pgbouncer only
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wecanacademy}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+    # PostgreSQL optimized for 100+ concurrent users (4GB RAM)
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=1GB
+      -c effective_cache_size=3GB
+      -c maintenance_work_mem=256MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=10MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+
+  # PgBouncer: Connection pooling middleware
+  # Reduces PostgreSQL connection overhead for 100+ concurrent users
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: wecanacademy-pgbouncer-dev
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER:-wecanacademy}:${POSTGRES_PASSWORD:-wecanacademy123}@postgres:5432/${POSTGRES_DB:-wecanacademy}"
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 25
+      MIN_POOL_SIZE: 10
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 3
+      MAX_DB_CONNECTIONS: 100
+      SERVER_IDLE_TIMEOUT: 600
+      AUTH_TYPE: scram-sha-256
+      # Ignore parameters that PgBouncer doesn't support
+      IGNORE_STARTUP_PARAMETERS: statement_timeout,extra_float_digits
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      - backend
+      - frontend
+
+  # Redis: Session caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: wecanacademy-redis-dev
+    restart: unless-stopped
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru --appendonly yes
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  # Database migration service - runs once on startup
+  migrate:
+    image: node:20-alpine
+    container_name: wecanacademy-migrate-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DIRECT_DATABASE_URL:-postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public}
+      DIRECT_DATABASE_URL: ${DIRECT_DATABASE_URL:-postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public}
+    volumes:
+      - ./:/app
+    working_dir: /app
+    networks:
+      - backend
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        npm install &&
+        echo 'Generating Prisma Client...' &&
+        npx prisma generate &&
+        echo 'Running migrations...' &&
+        npx prisma migrate deploy &&
+        echo 'Database migrations complete!'
+      "
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wecanacademy-app-dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      # Use PgBouncer for connection pooling (not direct PostgreSQL)
+      DATABASE_URL: ${DATABASE_URL:-postgresql://wecanacademy:wecanacademy123@pgbouncer:5432/wecanacademy?schema=public&pgbouncer=true}
+      # Direct connection for migrations only
+      DIRECT_DATABASE_URL: ${DIRECT_DATABASE_URL:-postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public}
+      # Redis connection
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      # Auth secrets - LOAD FROM .env
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-this-secret-in-production-to-a-random-string}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      AUTH_TRUST_HOST: "true"
+      NODE_ENV: "development"
+      # Performance optimizations
+      UV_THREADPOOL_SIZE: 16
+    ports:
+      - "3000:3000"
+    volumes:
+      - profile-pictures:/app/public/uploads/profile-pictures
     deploy:
       resources:
         limits:
@@ -24,80 +177,31 @@ services:
           memory: 2G
         reservations:
           cpus: '1'
-          memory: 512M
+          memory: 1G
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wecanacademy"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - wecanacademy-network
-    # PostgreSQL configuration for performance
-    command: >
-      postgres
-      -c max_connections=200
-      -c shared_buffers=256MB
-      -c effective_cache_size=1GB
-      -c maintenance_work_mem=64MB
-      -c checkpoint_completion_target=0.9
-      -c wal_buffers=16MB
-      -c default_statistics_target=100
-      -c random_page_cost=1.1
-      -c effective_io_concurrency=200
-      -c work_mem=16MB
-      -c min_wal_size=1GB
-      -c max_wal_size=4GB
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: wecanacademy-app
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      # Database connection with connection pooling
-      DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public&connection_limit=50&pool_timeout=10"
-      DIRECT_DATABASE_URL: "postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public"
-      NEXTAUTH_SECRET: "change-this-secret-in-production-to-a-random-string"
-      NEXTAUTH_URL: "http://localhost:3000"
-      AUTH_TRUST_HOST: "true"
-      NODE_ENV: "production"
-      # Performance optimizations
-      UV_THREADPOOL_SIZE: 16
-    ports:
-      - "3000:3000"
-    volumes:
-      - profile-pictures:/app/public/uploads/profile-pictures
-    # Resource limits for production
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 3G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-      # Enable multiple replicas for load balancing (uncomment for production)
-      # replicas: 3
-    # Health check for the app
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/auth/session', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     networks:
-      - wecanacademy-network
+      - frontend
+      - backend
 
+# Network isolation for security
+# frontend: app containers only
+# backend: app, pgbouncer, postgres, redis
 networks:
-  wecanacademy-network:
+  frontend:
     driver: bridge
+  backend:
+    driver: bridge
+    internal: true  # No external access to backend services
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
   profile-pictures:
     driver: local

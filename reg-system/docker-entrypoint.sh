@@ -9,10 +9,11 @@ done
 
 echo "PostgreSQL is ready!"
 
-# Skip migrations in production - run them manually or in CI/CD
-# Migrations require full Prisma CLI which increases image size significantly
-echo "Skipping migrations (should be run manually or in CI/CD)..."
-echo "To run migrations: docker exec wecanacademy-app npx prisma migrate deploy"
+# Note: Migrations are handled by the separate 'migrate' container in production
+# In development, run migrations manually with:
+# docker exec <container> npx prisma migrate deploy
+echo "Skipping automatic migrations (handled by migrate service)"
+echo "Database schema should be up-to-date from migration container"
 
 echo "Starting Next.js application..."
 exec "$@"

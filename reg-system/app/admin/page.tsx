@@ -79,6 +79,13 @@ export default async function AdminPage() {
 
   const cards = [
     {
+      title: "Analytics",
+      description: "View attendance and check-in analytics",
+      href: "/admin/analytics",
+      icon: TrendingUp,
+      color: "text-teal-500",
+    },
+    {
       title: "Users",
       description: "Manage system users and roles",
       href: "/admin/users",

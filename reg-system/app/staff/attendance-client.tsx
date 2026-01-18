@@ -10,12 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { getSessions } from "@/app/actions/academy";
 import { markAttendance, getAttendanceBySession } from "@/app/actions/attendance";
 import { getStudentByAdmission } from "@/app/actions/students";
-import { CheckCircle, Church, AlertCircle, ScanLine } from "lucide-react";
+import { ProfilePictureDisplay } from "@/components/profile-picture";
+import { CheckCircle, Church, AlertCircle, ScanLine, User, Hash, BookOpen } from "lucide-react";
 
 export function AttendanceClient() {
   // Chapel only - class features commented out for future use
   // const [mode, setMode] = useState<"CLASS" | "CHAPEL">("CLASS");
-  const [sessions, setSessions] = useState<any[]>([]);
+  // const [sessions, setSessions] = useState<any[]>([]); // Commented out - only currentSession is needed
   // const [classes, setClasses] = useState<any[]>([]);
   const [currentSession, setCurrentSession] = useState<any>(null);
   // const [selectedClass, setSelectedClass] = useState("");
@@ -25,6 +26,10 @@ export function AttendanceClient() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [sessionError, setSessionError] = useState("");
+
+  // Scanned student display - auto-updates on each scan
+  const [scannedStudent, setScannedStudent] = useState<any>(null);
+  const [scanStatus, setScanStatus] = useState<"success" | "error" | null>(null);
 
   // Barcode scanner detection
   const inputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +94,7 @@ export function AttendanceClient() {
   async function loadSessionsAndDetectCurrent() {
     try {
       const data = await getSessions();
-      setSessions(data);
+      // Sessions loaded but not stored - we only need to detect current session
 
       // Auto-detect current session
       const detected = detectCurrentSession(data);
@@ -141,10 +146,13 @@ export function AttendanceClient() {
     setLoading(true);
     setError("");
     setSuccess("");
+    setScanStatus(null);
 
     try {
       if (!currentSession) {
         setError("No active session - cannot mark attendance outside session time");
+        setScannedStudent(null);
+        setScanStatus("error");
         return;
       }
 
@@ -152,8 +160,13 @@ export function AttendanceClient() {
       const student = await getStudentByAdmission(trimmed);
       if (!student) {
         setError(`Student not found: ${trimmed}`);
+        setScannedStudent(null);
+        setScanStatus("error");
         return;
       }
+
+      // Set scanned student for display (auto-updates each scan)
+      setScannedStudent(student);
 
       await markAttendance({
         studentId: student.id,
@@ -162,6 +175,7 @@ export function AttendanceClient() {
       });
 
       setSuccess(`Attendance marked for ${student.fullName}`);
+      setScanStatus("success");
       setAdmissionNumber("");
       loadAttendances();
 
@@ -170,6 +184,12 @@ export function AttendanceClient() {
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
       setError(err.message || "Failed to mark attendance");
+      setScanStatus("error");
+      setAdmissionNumber("");
+      // Re-focus input for next scan
+      setTimeout(() => inputRef.current?.focus(), 100);
+      // Keep error visible longer (5 seconds instead of clearing immediately)
+      setTimeout(() => setError(""), 5000);
     } finally {
       setLoading(false);
     }
@@ -390,6 +410,77 @@ export function AttendanceClient() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Scanned Student Display - Auto-updates on each scan, no close needed */}
+      {scannedStudent && (
+        <Card className={`luxury-card border-2 transition-all duration-300 ${
+          scanStatus === "success"
+            ? "border-green-500 bg-green-500/5"
+            : scanStatus === "error"
+            ? "border-destructive bg-destructive/5"
+            : "border-border"
+        }`}>
+          <CardContent className="py-6">
+            <div className="flex items-center gap-6">
+              {/* Profile Picture - Large display */}
+              <div className="shrink-0">
+                <div className={`rounded-full p-1 ${
+                  scanStatus === "success" ? "ring-4 ring-green-500/30" : ""
+                }`}>
+                  <ProfilePictureDisplay
+                    profilePictureUrl={scannedStudent.profilePicture}
+                    gender={scannedStudent.gender}
+                    size="lg"
+                  />
+                </div>
+              </div>
+
+              {/* Student Info */}
+              <div className="flex-1 min-w-0">
+                {/* Name - Large */}
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <h2 className="text-2xl font-bold tracking-tight truncate">
+                    {scannedStudent.fullName}
+                  </h2>
+                </div>
+
+                {/* Admission Number */}
+                <div className="flex items-center gap-2 mb-2">
+                  <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-lg font-mono font-medium">
+                    {scannedStudent.admissionNumber}
+                  </span>
+                </div>
+
+                {/* Course/Class */}
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <Badge variant="secondary" className="text-sm">
+                    {scannedStudent.course?.name || "N/A"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Status Indicator */}
+              <div className="shrink-0">
+                {scanStatus === "success" && (
+                  <div className="flex flex-col items-center gap-1">
+                    <CheckCircle className="h-12 w-12 text-green-500" />
+                    <span className="text-xs font-medium text-green-600 uppercase">Marked</span>
+                  </div>
+                )}
+                {scanStatus === "error" && (
+                  <div className="flex flex-col items-center gap-1">
+                    <AlertCircle className="h-12 w-12 text-destructive" />
+                    <span className="text-xs font-medium text-destructive uppercase">Error</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {currentSession && (
         <Card className="luxury-card border-0">

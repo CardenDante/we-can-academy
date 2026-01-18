@@ -73,6 +73,7 @@ model Weekend {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   sessions     Session[]
+  checkIns     CheckIn[]
 
   @@unique([saturdayDate])
   @@index([saturdayDate])
@@ -95,6 +96,10 @@ model Session {
   @@index([weekendId])
   @@index([day])
   @@index([sessionType])
+  // Composite indexes for optimized queries
+  @@index([weekendId, sessionType]) // For finding chapel sessions by weekend
+  @@index([weekendId, day]) // For finding sessions on specific days of a weekend
+  @@index([sessionType, day]) // For filtering chapel sessions by day across weekends
 }
 
 model SessionClass {
@@ -122,13 +127,38 @@ model Student {
   phoneNumber     String
   identification  String
   profilePicture  String?      // URL path to profile picture
+  isExpelled      Boolean      @default(false)
+  expelledAt      DateTime?
+  expelledReason  String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   attendances     Attendance[]
+  checkIns        CheckIn[]
 
   @@index([admissionNumber])
   @@index([courseId])
   @@index([fullName])
+  @@index([isExpelled])
+}
+
+model CheckIn {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  weekendId String
+  weekend   Weekend  @relation(fields: [weekendId], references: [id], onDelete: Cascade)
+  day       DayOfWeekend
+  checkedAt DateTime @default(now())
+  checkedBy String
+
+  @@unique([studentId, weekendId, day])
+  @@index([studentId])
+  @@index([weekendId])
+  @@index([day])
+  @@index([checkedAt])
+  // Composite indexes for optimized queries
+  @@index([weekendId, day, checkedAt]) // For getTodayCheckIns() - filter by weekend+day, order by time
+  @@index([studentId, weekendId]) // For chapel attendance verification - check if student checked in this weekend
 }
 
 model Attendance {
@@ -146,4 +176,8 @@ model Attendance {
   @@index([studentId])
   @@index([sessionId])
   @@index([classId])
+  // Composite indexes for optimized queries
+  @@index([sessionId, classId]) // For getAttendanceBySession() with class filter
+  @@index([sessionId, markedAt]) // For getAttendanceBySession() ordered by time
+  @@index([studentId, markedAt]) // For student attendance history ordered by date
 }

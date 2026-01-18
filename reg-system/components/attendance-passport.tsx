@@ -28,9 +28,10 @@ interface AttendancePassportProps {
   }>;
   type: "CLASS" | "CHAPEL";
   studentId: string;
+  className?: string;
 }
 
-export function AttendancePassport({ attendances, weekends, type, studentId }: AttendancePassportProps) {
+export function AttendancePassport({ attendances, weekends, type, studentId, className = "" }: AttendancePassportProps) {
   // Calculate attendance stats
 
   const getAttendanceForWeekend = (weekendId: string, day?: "SATURDAY" | "SUNDAY") => {
@@ -45,8 +46,7 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
   const calculateStats = () => {
     let present = 0;
     let absent = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
 
     weekends.forEach((weekend) => {
       const saturdayDate = new Date(weekend.saturdayDate);
@@ -54,7 +54,7 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
 
       const sundayDate = new Date(weekend.saturdayDate);
       sundayDate.setDate(sundayDate.getDate() + 1);
-      sundayDate.setHours(0, 0, 0, 0);
+      sundayDate.setHours(23, 59, 59, 999); // End of Sunday
 
       if (type === "CHAPEL") {
         // Chapel: One attendance per weekend (either Sat OR Sun)
@@ -63,8 +63,8 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
             att.session.weekend.id === weekend.id && att.session.sessionType === "CHAPEL"
         );
 
-        // Only count if Sunday has passed (meaning the whole weekend is over)
-        if (sundayDate <= today) {
+        // Only count if Sunday has fully passed (weekend is over)
+        if (now > sundayDate) {
           if (hasAttendance) {
             present++;
           } else {
@@ -76,8 +76,11 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
         const satAttendance = getAttendanceForWeekend(weekend.id, "SATURDAY");
         const sunAttendance = getAttendanceForWeekend(weekend.id, "SUNDAY");
 
-        // Check if Saturday has passed
-        if (saturdayDate <= today) {
+        const saturdayEnd = new Date(saturdayDate);
+        saturdayEnd.setHours(23, 59, 59, 999);
+
+        // Check if Saturday has fully passed
+        if (now > saturdayEnd) {
           if (satAttendance) {
             present++;
           } else {
@@ -85,8 +88,8 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
           }
         }
 
-        // Check if Sunday has passed
-        if (sundayDate <= today) {
+        // Check if Sunday has fully passed
+        if (now > sundayDate) {
           if (sunAttendance) {
             present++;
           } else {
@@ -102,7 +105,7 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
   const stats = calculateStats();
 
   return (
-    <Card className="luxury-card border-0">
+    <Card className={`luxury-card border-0 flex flex-col ${className}`}>
       <CardHeader className="pb-4 sm:pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">
@@ -116,7 +119,7 @@ export function AttendancePassport({ attendances, weekends, type, studentId }: A
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         {type === "CHAPEL" ? (
           <ChapelPassport
             weekends={weekends}
@@ -140,8 +143,7 @@ function ChapelPassport({
   weekends: any[];
   getAttendanceForWeekend: (weekendId: string, day?: "SATURDAY" | "SUNDAY") => any;
 }) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
@@ -150,8 +152,8 @@ function ChapelPassport({
         const saturdayDate = new Date(weekend.saturdayDate);
         const sundayDate = new Date(weekend.saturdayDate);
         sundayDate.setDate(sundayDate.getDate() + 1);
-        sundayDate.setHours(0, 0, 0, 0);
-        const hasPassed = sundayDate <= today;
+        sundayDate.setHours(23, 59, 59, 999); // End of Sunday
+        const hasPassed = now > sundayDate; // Weekend is over
         const isPresent = !!attendance;
         const isAbsent = hasPassed && !attendance;
 
@@ -219,8 +221,7 @@ function ClassPassport({
   weekends: any[];
   getAttendanceForWeekend: (weekendId: string, day?: "SATURDAY" | "SUNDAY") => any;
 }) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
 
   return (
     <div className="space-y-6">
@@ -233,10 +234,15 @@ function ClassPassport({
 
         const sundayDate = new Date(weekend.saturdayDate);
         sundayDate.setDate(sundayDate.getDate() + 1);
-        sundayDate.setHours(0, 0, 0, 0);
 
-        const satPassed = saturdayDate <= today;
-        const sunPassed = sundayDate <= today;
+        const saturdayEnd = new Date(saturdayDate);
+        saturdayEnd.setHours(23, 59, 59, 999);
+
+        const sundayEnd = new Date(sundayDate);
+        sundayEnd.setHours(23, 59, 59, 999);
+
+        const satPassed = now > saturdayEnd;
+        const sunPassed = now > sundayEnd;
 
         return (
           <div key={weekend.id} className="border rounded p-4">

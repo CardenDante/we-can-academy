@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+!.env.production.example
+
+# Docker volumes and data
+postgres_data
+redis_data
+backups/
 
 # vercel
 .vercel

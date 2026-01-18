@@ -11,7 +11,7 @@ export async function markAttendance(data: {
 }) {
   const currentUser = await getUser();
   if (!currentUser || (currentUser.role !== "STAFF" && currentUser.role !== "ADMIN")) {
-    throw new Error("Unauthorized");
+    throw new Error("You don't have permission to mark attendance. Please contact an administrator.");
   }
 
   // Get the session to determine the date
@@ -21,7 +21,43 @@ export async function markAttendance(data: {
   });
 
   if (!session) {
-    throw new Error("Session not found");
+    throw new Error("The selected session was not found. Please refresh the page and try again.");
+  }
+
+  // Get student info for better error messages
+  const student = await prisma.student.findUnique({
+    where: { id: data.studentId },
+    select: { fullName: true, admissionNumber: true, isExpelled: true },
+  });
+
+  if (!student) {
+    throw new Error("Student not found. Please verify the admission number and try again.");
+  }
+
+  // Check if student is expelled
+  if (student.isExpelled) {
+    throw new Error(
+      `${student.fullName} has been expelled and cannot be marked for attendance. ` +
+      `Please contact an administrator if this is an error.`
+    );
+  }
+
+  // Check if student has checked in at the gate this weekend (for CHAPEL sessions only)
+  // Students can check in on either Saturday or Sunday, and attend chapel on either day
+  if (session.sessionType === "CHAPEL") {
+    const checkIns = await prisma.checkIn.findMany({
+      where: {
+        studentId: data.studentId,
+        weekendId: session.weekendId,
+      },
+    });
+
+    if (checkIns.length === 0) {
+      throw new Error(
+        `${student.fullName} has not checked in at the gate this weekend. ` +
+        `Students must check in at security before chapel attendance can be marked.`
+      );
+    }
   }
 
   // Determine the date based on session day
@@ -30,22 +66,21 @@ export async function markAttendance(data: {
     attendanceDate.setDate(attendanceDate.getDate() + 1);
   }
 
-  // Normalize to start of day for comparison
-  const startOfDay = new Date(attendanceDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(attendanceDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  // Format the day nicely
+  const dayName = session.day === "SATURDAY" ? "Saturday" : "Sunday";
+  const sessionTypeName = session.sessionType === "CHAPEL" ? "Chapel" : "Class";
 
-  // Check if student already has attendance for this session type on this day
+  // For CHAPEL sessions: Check if student has attended ANY chapel session this weekend (Sat OR Sun)
+  // For CLASS sessions: Check if student has attended this specific class session on this day
   const existingAttendance = await prisma.attendance.findFirst({
     where: {
       studentId: data.studentId,
       session: {
         sessionType: session.sessionType,
-        weekend: {
-          id: session.weekend.id,
-        },
-        day: session.day,
+        weekendId: session.weekendId,
+        // For CHAPEL: don't filter by day (can attend either Sat or Sun)
+        // For CLASS: filter by day (must attend specific day's class)
+        ...(session.sessionType === "CLASS" ? { day: session.day } : {}),
       },
     },
     include: {
@@ -54,33 +89,71 @@ export async function markAttendance(data: {
   });
 
   if (existingAttendance) {
-    throw new Error(
-      `Student has already been marked for ${session.sessionType} on ${session.day} of ${session.weekend.name}`
-    );
+    const markedTime = new Date(existingAttendance.markedAt).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    const markedDay = existingAttendance.session.day === "SATURDAY" ? "Saturday" : "Sunday";
+
+    if (session.sessionType === "CHAPEL") {
+      throw new Error(
+        `${student.fullName} has already attended Chapel this weekend on ${markedDay}. ` +
+        `Chapel attendance is once per weekend (attendance recorded at ${markedTime}).`
+      );
+    } else {
+      throw new Error(
+        `${student.fullName} has already been marked for ${sessionTypeName} today (${dayName}). ` +
+        `Attendance was recorded at ${markedTime}.`
+      );
+    }
   }
 
-  const attendance = await prisma.attendance.create({
-    data: {
-      studentId: data.studentId,
-      sessionId: data.sessionId,
-      classId: data.classId || null,
-      markedBy: currentUser.name || "System",
-    },
-    include: {
-      student: { include: { course: true } },
-      session: { include: { weekend: true } },
-      class: { include: { course: true } },
-    },
-  });
+  try {
+    const attendance = await prisma.attendance.create({
+      data: {
+        studentId: data.studentId,
+        sessionId: data.sessionId,
+        classId: data.classId || null,
+        markedBy: currentUser.name || "System",
+      },
+      include: {
+        student: { include: { course: true } },
+        session: { include: { weekend: true } },
+        class: { include: { course: true } },
+      },
+    });
 
-  revalidatePath("/staff");
-  return attendance;
+    revalidatePath("/staff");
+    return attendance;
+  } catch (error: any) {
+    // Handle unique constraint violation (student already marked for this exact session)
+    if (error.code === "P2002") {
+      throw new Error(
+        `${student.fullName} has already been marked for this session. ` +
+        `Each student can only be marked once per session.`
+      );
+    }
+    throw new Error("Failed to mark attendance. Please try again.");
+  }
 }
 
-export async function getAttendanceBySession(sessionId: string, classId?: string) {
+/**
+ * Get attendance by session with pagination
+ * @param sessionId - Session ID
+ * @param classId - Optional class ID filter
+ * @param limit - Maximum records to return (default 200 for typical class size)
+ * @param offset - Records to skip (default 0)
+ */
+export async function getAttendanceBySession(
+  sessionId: string,
+  classId?: string,
+  limit: number = 200,
+  offset: number = 0
+) {
   const currentUser = await getUser();
   if (!currentUser || (currentUser.role !== "STAFF" && currentUser.role !== "ADMIN")) {
-    throw new Error("Unauthorized");
+    throw new Error("You don't have permission to view attendance records.");
   }
 
   const where = classId
@@ -94,15 +167,24 @@ export async function getAttendanceBySession(sessionId: string, classId?: string
       class: { include: { course: true } },
     },
     orderBy: { markedAt: "desc" },
+    take: limit,
+    skip: offset,
   });
 }
 
 export async function deleteAttendance(id: string) {
   const currentUser = await getUser();
   if (!currentUser || (currentUser.role !== "STAFF" && currentUser.role !== "ADMIN")) {
-    throw new Error("Unauthorized");
+    throw new Error("You don't have permission to delete attendance records.");
   }
 
-  await prisma.attendance.delete({ where: { id } });
-  revalidatePath("/staff");
+  try {
+    await prisma.attendance.delete({ where: { id } });
+    revalidatePath("/staff");
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      throw new Error("This attendance record was already deleted or doesn't exist.");
+    }
+    throw new Error("Failed to delete attendance record. Please try again.");
+  }
 }

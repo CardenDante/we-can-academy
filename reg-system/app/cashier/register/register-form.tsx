@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCourses } from "@/app/actions/academy";
-import { registerStudent } from "@/app/actions/students";
-import { ProfilePictureUpload, uploadProfilePicture } from "@/components/profile-picture";
+import { registerStudent, getStudentByAdmission } from "@/app/actions/students";
+import { ProfilePictureUpload, uploadProfilePicture, ProfilePictureDisplay } from "@/components/profile-picture";
 import {
   User,
   Hash,
@@ -20,7 +20,9 @@ import {
   Loader2,
   CheckCircle2,
   ArrowLeft,
-  Camera
+  Camera,
+  ScanBarcode,
+  Search
 } from "lucide-react";
 
 export function RegisterStudentForm() {
@@ -34,6 +36,12 @@ export function RegisterStudentForm() {
   const [formKey, setFormKey] = useState(0);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+
+  // Test scanner state
+  const [scanInput, setScanInput] = useState("");
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scannedStudent, setScannedStudent] = useState<any>(null);
+  const [scanError, setScanError] = useState("");
 
   useEffect(() => {
     loadCourses();
@@ -71,60 +79,89 @@ export function RegisterStudentForm() {
       return;
     }
 
-    try {
-      const student = await registerStudent(data);
+    const result = await registerStudent(data);
 
-      // Upload profile picture if provided
-      if (profileImageFile && student.id) {
-        try {
-          await uploadProfilePicture(student.id, profileImageFile);
-        } catch (uploadErr: any) {
-          console.error("Profile picture upload failed:", uploadErr);
-          // Don't fail the whole registration if picture upload fails
-          setError(`Student registered, but profile picture upload failed: ${uploadErr.message}`);
-        }
-      }
-
-      setSuccess("Student registered successfully!");
-      setSelectedGender("");
-      setSelectedCourse("");
-      setProfileImage(null);
-      setProfileImageFile(null);
-      setFormKey(prev => prev + 1);
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to register student");
-    } finally {
+    if (!result.success) {
+      setError(result.error || "Failed to register student");
       setLoading(false);
+      return;
+    }
+
+    // Upload profile picture if provided
+    if (profileImageFile && result.student?.id) {
+      try {
+        await uploadProfilePicture(result.student.id, profileImageFile);
+      } catch (uploadErr: any) {
+        console.error("Profile picture upload failed:", uploadErr);
+        // Don't fail the whole registration if picture upload fails
+        setError(`Student registered, but profile picture upload failed: ${uploadErr.message}`);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setSuccess("Student registered successfully!");
+    setSelectedGender("");
+    setSelectedCourse("");
+    setProfileImage(null);
+    setProfileImageFile(null);
+    setFormKey(prev => prev + 1);
+    setTimeout(() => setSuccess(""), 3000);
+    setLoading(false);
+  }
+
+  async function handleScan() {
+    if (!scanInput.trim()) {
+      setScanError("Please enter an admission number");
+      return;
+    }
+
+    setScanLoading(true);
+    setScanError("");
+    setScannedStudent(null);
+
+    try {
+      const student = await getStudentByAdmission(scanInput.trim());
+      if (!student) {
+        setScanError("No student found with this admission number");
+      } else {
+        setScannedStudent(student);
+      }
+    } catch (err: any) {
+      setScanError(err.message || "Failed to fetch student data");
+    } finally {
+      setScanLoading(false);
     }
   }
 
   return (
-    <Card className="w-full max-w-3xl border border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <CardHeader className="space-y-1 border-b border-border/40 px-8 py-6 bg-muted/20">
-        
-        {/* Back Button */}
-        <div className="mb-2">
-            <Button 
-                variant="ghost" 
-                size="sm" 
-                className="-ml-3 h-8 text-muted-foreground hover:text-foreground"
-                onClick={() => router.back()}
-            >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
-        </div>
+    <div className="w-full flex gap-6 max-w-7xl mx-auto">
+      {/* Registration Form */}
+      <Card className="flex-1 border border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <CardHeader className="space-y-1 border-b border-border/40 px-8 py-6 bg-muted/20">
 
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-medium tracking-tight uppercase">Register New Student</CardTitle>
-            <CardDescription className="text-muted-foreground mt-1">
-              Enter the student's personal and academic details below.
-            </CardDescription>
+          {/* Back Button */}
+          <div className="mb-2">
+              <Button
+                  variant="ghost"
+                  size="sm"
+                  className="-ml-3 h-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => router.back()}
+              >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+              </Button>
           </div>
-        </div>
-      </CardHeader>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-medium tracking-tight uppercase">Register New Student</CardTitle>
+              <CardDescription className="text-muted-foreground mt-1">
+                Enter the student's personal and academic details below.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
       
       <CardContent className="px-8 py-8">
         <form key={formKey} onSubmit={handleSubmit} className="space-y-8">
@@ -268,6 +305,128 @@ export function RegisterStudentForm() {
           </div>
         </form>
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Test Scanner Panel */}
+      <Card className="w-80 border border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-fit">
+        <CardHeader className="space-y-1 border-b border-border/40 px-6 py-4 bg-muted/20">
+          <CardTitle className="text-sm font-medium tracking-tight uppercase flex items-center gap-2">
+            <ScanBarcode className="w-4 h-4" />
+            Test Scanner
+          </CardTitle>
+          <CardDescription className="text-muted-foreground text-xs">
+            Input or scan admission number to test data
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="px-6 py-6 space-y-4">
+          {/* Scan Input */}
+          <div className="space-y-2">
+            <Label htmlFor="scanInput" className="text-xs">Admission Number</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Hash className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="scanInput"
+                  value={scanInput}
+                  onChange={(e) => setScanInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleScan()}
+                  placeholder="e.g. 5326"
+                  className="pl-9"
+                />
+              </div>
+              <Button
+                type="button"
+                size="icon"
+                onClick={handleScan}
+                disabled={scanLoading}
+              >
+                {scanLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Scan Error */}
+          {scanError && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-destructive" />
+              {scanError}
+            </div>
+          )}
+
+          {/* Scanned Student Profile */}
+          {scannedStudent && (
+            <div className="space-y-4 pt-2">
+              <div className="h-[1px] bg-border/40 w-full" />
+
+              {/* Profile Picture */}
+              <div className="flex justify-center">
+                <ProfilePictureDisplay
+                  profilePictureUrl={scannedStudent.profilePictureUrl}
+                  gender={scannedStudent.gender}
+                  size="lg"
+                />
+              </div>
+
+              {/* Student Info */}
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-medium">{scannedStudent.fullName}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Adm:</span>
+                  <span>{scannedStudent.admissionNumber}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Course:</span>
+                  <span className="text-xs">{scannedStudent.course?.name || "N/A"}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Phone:</span>
+                  <span>{scannedStudent.phoneNumber}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Area:</span>
+                  <span>{scannedStudent.areaOfResidence}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">ID:</span>
+                  <span>{scannedStudent.identification}</span>
+                </div>
+              </div>
+
+              {/* Clear Button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full mt-2"
+                onClick={() => {
+                  setScannedStudent(null);
+                  setScanInput("");
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
