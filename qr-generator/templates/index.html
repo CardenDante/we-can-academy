@@ -72,22 +72,37 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: 2rem;
-            align-items: start;
+            align-items: stretch;
         }
 
         @media (min-width: 1024px) {
             .content-wrapper {
-                grid-template-columns: 480px 1fr;
+                grid-template-columns: 1fr 1fr;
                 gap: 3rem;
+                align-items: start;
+            }
+
+            .form-section {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .button-group {
+                margin-top: auto;
             }
 
             .result {
                 margin-top: 0 !important;
             }
 
-            .qr-preview {
-                position: sticky;
-                top: 2rem;
+            .qr-container {
+                width: 100%;
+                max-width: 450px;
+                margin: 0 auto;
+            }
+
+            .qr-container.empty {
+                min-height: 400px;
             }
         }
 
@@ -276,19 +291,22 @@
             backdrop-filter: blur(10px);
             border-radius: var(--radius);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-            min-height: 400px;
+            aspect-ratio: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            padding: 1.5rem;
         }
 
         .qr-container.empty {
             background: transparent;
             box-shadow: none;
             border: 2px dashed hsla(214, 100%, 48%, 0.2);
+            min-height: 350px;
         }
 
         .qr-container.empty::before {
@@ -329,7 +347,6 @@
         }
 
         .qr-preview {
-            padding: 2rem;
             display: none;
             width: 100%;
             animation: fadeInScale 0.5s ease-out;
@@ -356,36 +373,36 @@
             box-shadow: none;
         }
 
-        @media (min-width: 1024px) {
-            .result {
-                text-align: center;
-            }
-
-            .qr-container {
-                min-height: 500px;
-            }
-        }
-
         .qr-preview img {
             display: block;
-            max-width: 100%;
-            height: auto;
-            border-radius: 0.25rem;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
         }
 
         .qr-info {
             margin-top: 1.5rem;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--muted);
-            font-weight: 300;
-            letter-spacing: 0.01em;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            text-align: center;
+            line-height: 1.6;
         }
 
         .qr-info strong {
-            color: var(--primary);
+            color: var(--text);
             font-weight: 500;
-            display: block;
-            margin-bottom: 0.25rem;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .qr-info {
+                display: none;
+            }
         }
 
         .alert {
@@ -465,40 +482,6 @@
             }
         }
 
-        @media print {
-            body {
-                background: white;
-                padding: 0;
-                margin: 0;
-            }
-
-            body::before {
-                display: none;
-            }
-
-            .container {
-                max-width: none;
-            }
-
-            .header, .form-section, .alert, .qr-info, .loading {
-                display: none !important;
-            }
-
-            .result {
-                display: block !important;
-            }
-
-            .qr-preview {
-                box-shadow: none;
-                padding: 0;
-                margin: 0;
-                background: transparent;
-            }
-
-            .qr-preview img {
-                page-break-inside: avoid;
-            }
-        }
     </style>
 </head>
 <body>
@@ -532,7 +515,8 @@
 
                     <div class="button-group">
                         <button class="btn-primary" onclick="generateQR()">Generate</button>
-                        <button class="btn-success" id="printBtn" onclick="printLabel()">Print</button>
+                        <button class="btn-success" id="downloadBtn" onclick="downloadQR()" style="display: none;">Download</button>
+                        <button class="btn-success" id="printBtn" onclick="printLabel()" style="display: none;">Print</button>
                     </div>
                 </div>
 
@@ -563,6 +547,8 @@
     </div>
 
     <script>
+        let currentQRData = null;
+
         async function generateQR() {
             const admissionNumber = document.getElementById('admission_number').value.trim();
             const size = document.getElementById('size').value;
@@ -573,16 +559,19 @@
             const qrPreview = document.getElementById('qrPreview');
             const qrInfo = document.getElementById('qrInfo');
             const printBtn = document.getElementById('printBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
 
             // Reset
             error.style.display = 'none';
             printBtn.style.display = 'none';
+            downloadBtn.style.display = 'none';
 
             if (!admissionNumber) {
                 showError('Please enter an admission number');
                 return;
             }
 
+            console.log('Sending request with size:', size, 'parsed as:', parseInt(size));
             loading.style.display = 'block';
 
             try {
@@ -603,17 +592,28 @@
                     throw new Error(data.error || 'Failed to generate QR code');
                 }
 
+                // Store current QR data for printing
+                currentQRData = data;
+
                 // Display QR code
-                qrPreview.innerHTML = `<img src="${data.image}" alt="QR Code">`;
+                console.log('Backend response:', data);
+                const img = new Image();
+                img.onload = function() {
+                    console.log('QR Code Rendered Size:', this.naturalWidth, 'x', this.naturalHeight, 'px');
+                };
+                img.src = data.image;
+                qrPreview.innerHTML = `<img src="${data.image}" alt="QR Code" id="qrImage">`;
                 qrInfo.innerHTML =
                     `<strong>Admission Number:</strong> ${data.admission_number}<br>` +
-                    `<strong>Label Size:</strong> ${data.size_mm}mm x ${data.size_mm}mm`;
+                    `<strong>Label Size:</strong> ${data.size_mm}mm x ${data.size_mm}mm<br>` +
+                    `<strong>Rendered Size:</strong> ${data.size_pixels} x ${data.size_pixels} px`;
 
                 // Show QR code, hide placeholder
                 qrContainer.classList.remove('empty');
                 qrPlaceholder.style.display = 'none';
                 qrPreview.style.display = 'block';
                 qrInfo.style.display = 'block';
+                downloadBtn.style.display = 'block';
                 printBtn.style.display = 'block';
 
             } catch (err) {
@@ -623,8 +623,76 @@
             }
         }
 
+        function downloadQR() {
+            if (!currentQRData) {
+                showError('No QR code to download');
+                return;
+            }
+
+            // Download the QR code as PNG
+            const link = document.createElement('a');
+            link.href = currentQRData.image;
+            link.download = `QR-${currentQRData.admission_number}-${currentQRData.size_mm}mm.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function printLabel() {
-            window.print();
+            if (!currentQRData) {
+                showError('No QR code to print');
+                return;
+            }
+
+            // Open image in new window for label printer software
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print QR - ${currentQRData.admission_number}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                        }
+                        img {
+                            width: ${currentQRData.size_mm}mm;
+                            height: ${currentQRData.size_mm}mm;
+                            image-rendering: -webkit-optimize-contrast;
+                            image-rendering: crisp-edges;
+                            display: block;
+                        }
+                        @media print {
+                            @page {
+                                size: ${currentQRData.size_mm}mm ${currentQRData.size_mm}mm;
+                                margin: 0;
+                            }
+                            body {
+                                margin: 0;
+                                padding: 0;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${currentQRData.image}" alt="QR Code">
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+
+            // Auto-trigger print dialog after image loads
+            printWindow.onload = function() {
+                setTimeout(() => {
+                    printWindow.print();
+                }, 250);
+            };
         }
 
         function showError(message) {
