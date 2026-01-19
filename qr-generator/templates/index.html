@@ -486,11 +486,10 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="size">Label Size</label>
-                        <select id="size">
-                            <option value="30">30mm × 30mm</option>
-                            <option value="40">40mm × 40mm</option>
-                            <option value="50">50mm × 50mm</option>
+                        <label for="labelSize">Label Size (XP-470B @ 203 DPI)</label>
+                        <select id="labelSize">
+                            <option value="60x40">60mm × 40mm</option>
+                            <option value="40x30">40mm × 30mm</option>
                         </select>
                     </div>
 
@@ -532,7 +531,7 @@
 
         async function generateQR() {
             const admissionNumber = document.getElementById('admission_number').value.trim();
-            const size = document.getElementById('size').value;
+            const labelSize = document.getElementById('labelSize').value;
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const qrContainer = document.getElementById('qrContainer');
@@ -552,7 +551,7 @@
                 return;
             }
 
-            console.log('Sending request with size:', size, 'parsed as:', parseInt(size));
+            console.log('Sending request with label size:', labelSize);
             loading.style.display = 'flex';
 
             try {
@@ -563,7 +562,7 @@
                     },
                     body: JSON.stringify({
                         admission_number: admissionNumber,
-                        size: parseInt(size)
+                        label_size: labelSize
                     })
                 });
 
@@ -585,9 +584,9 @@
                 img.src = data.image;
                 qrPreview.innerHTML = `<img src="${data.image}" alt="QR Code" id="qrImage">`;
                 qrInfo.innerHTML =
-                    `<strong>ADM:</strong> ${data.admission_number} | ` +
-                    `<strong>Size:</strong> ${data.size_mm}mm x ${data.size_mm}mm | ` +
-                    `<strong>Rendered Size:</strong> ${data.size_pixels} x ${data.size_pixels} px`;
+                    `<strong>Label:</strong> ${data.label_text} | ` +
+                    `<strong>Size:</strong> ${data.width_mm}mm × ${data.height_mm}mm | ` +
+                    `<strong>Resolution:</strong> ${data.width_pixels} × ${data.height_pixels}px @ ${data.dpi} DPI`;
 
                 // Show QR code, hide placeholder
                 qrContainer.classList.remove('empty');
@@ -613,7 +612,7 @@
             // Download the QR code as PNG
             const link = document.createElement('a');
             link.href = currentQRData.image;
-            link.download = `QR-${currentQRData.admission_number}-${currentQRData.size_mm}mm.png`;
+            link.download = `QR-${currentQRData.label_text}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -625,13 +624,13 @@
                 return;
             }
 
-            // Open image in new window for label printer software
+            // Open image in new window for XP-470B label printer (60x40mm)
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Print QR - ${currentQRData.admission_number}</title>
+                    <title>Print Label - ${currentQRData.label_text}</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body {
@@ -643,15 +642,15 @@
                             min-height: 100vh;
                         }
                         img {
-                            width: ${currentQRData.size_mm}mm;
-                            height: ${currentQRData.size_mm}mm;
+                            width: ${currentQRData.width_mm}mm;
+                            height: ${currentQRData.height_mm}mm;
                             image-rendering: -webkit-optimize-contrast;
                             image-rendering: crisp-edges;
                             display: block;
                         }
                         @media print {
                             @page {
-                                size: ${currentQRData.size_mm}mm ${currentQRData.size_mm}mm;
+                                size: ${currentQRData.width_mm}mm ${currentQRData.height_mm}mm;
                                 margin: 0;
                             }
                             body {
@@ -662,7 +661,7 @@
                     </style>
                 </head>
                 <body>
-                    <img src="${currentQRData.image}" alt="QR Code">
+                    <img src="${currentQRData.image}" alt="QR Label">
                 </body>
                 </html>
             `);
