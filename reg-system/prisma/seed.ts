@@ -58,18 +58,18 @@ async function main() {
   console.log(`Created ${courses.length} courses`);
 
   // Create admin user
-  const hashedPassword = await bcrypt.hash("admin123", 10);
+  const hashedPassword = await bcrypt.hash("James 1:4-6", 10);
   await prisma.user.upsert({
-    where: { username: "admin" },
+    where: { username: "Wecan" },
     update: {},
     create: {
-      username: "admin",
+      username: "Wecan",
       password: hashedPassword,
       name: "System Administrator",
       role: "ADMIN",
     },
   });
-  console.log("Created admin user (username: admin, password: admin123)");
+  console.log("Created admin user (username: Wecan, password: James 1:4-6)");
 
   console.log("Seeding completed!");
 }
