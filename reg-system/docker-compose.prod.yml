@@ -185,6 +185,31 @@ services:
       - frontend
       - backend
 
+  qr-generator:
+    build:
+      context: ../qr-generator
+      dockerfile: Dockerfile
+    container_name: wecanacademy-qr-generator-prod
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/qr-gen/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - frontend
+
 networks:
   frontend:
     driver: bridge

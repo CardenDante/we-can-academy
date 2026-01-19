@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Label Generator - We Can Academy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: hsl(214 100% 48%);
+            --primary-dark: hsl(214 100% 40%);
+            --success: hsl(142 71% 45%);
+            --destructive: hsl(0 84% 60%);
+            --muted: hsl(215 16% 47%);
+            --text: hsl(222.2 47% 11%);
+            --bg: hsl(0 0% 100%);
+            --radius: 0.5rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, hsla(214, 100%, 48%, 0.05) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-20px, -20px) rotate(5deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (min-width: 1024px) {
+            .content-wrapper {
+                grid-template-columns: 480px 1fr;
+                gap: 3rem;
+            }
+
+            .result {
+                margin-top: 0 !important;
+            }
+
+            .qr-preview {
+                position: sticky;
+                top: 2rem;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: var(--text);
+            letter-spacing: 0.02em;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+            font-weight: 300;
+            letter-spacing: 0.01em;
+        }
+
+        .form-section {
+            background: var(--bg);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group:last-of-type {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            font-size: 1rem;
+            font-family: inherit;
+            font-weight: 300;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid hsla(214, 100%, 48%, 0.2);
+            color: var(--text);
+            transition: all 0.3s ease;
+            border-radius: 0;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-bottom-color: var(--primary);
+            background: hsla(214, 100%, 48%, 0.02);
+        }
+
+        input[type="text"]::placeholder {
+            color: hsla(215, 16%, 47%, 0.5);
+            font-weight: 300;
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.2rem;
+            padding-right: 2.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 1rem 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: inherit;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 10px 30px hsla(214, 100%, 48%, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 15px 40px hsla(214, 100%, 48%, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, hsl(142 71% 40%) 100%);
+            color: white;
+            box-shadow: 0 10px 30px hsla(142, 71%, 45%, 0.3);
+            display: none;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            box-shadow: 0 15px 40px hsla(142, 71%, 45%, 0.4);
+            transform: translateY(-2px);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .qr-container {
+            background: var(--bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .qr-container.empty {
+            background: transparent;
+            box-shadow: none;
+            border: 2px dashed hsla(214, 100%, 48%, 0.2);
+        }
+
+        .qr-container.empty::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 20px,
+                    hsla(214, 100%, 48%, 0.02) 20px,
+                    hsla(214, 100%, 48%, 0.02) 40px
+                );
+            pointer-events: none;
+        }
+
+        .qr-placeholder {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--muted);
+        }
+
+        .qr-placeholder svg {
+            width: 80px;
+            height: 80px;
+            opacity: 0.3;
+            margin-bottom: 1.5rem;
+        }
+
+        .qr-placeholder p {
+            font-size: 0.95rem;
+            font-weight: 300;
+            letter-spacing: 0.01em;
+        }
+
+        .qr-preview {
+            padding: 2rem;
+            display: none;
+            width: 100%;
+            animation: fadeInScale 0.5s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .qr-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.12);
+        }
+
+        .qr-container.empty:hover {
+            border-color: hsla(214, 100%, 48%, 0.3);
+            box-shadow: none;
+        }
+
+        @media (min-width: 1024px) {
+            .result {
+                text-align: center;
+            }
+
+            .qr-container {
+                min-height: 500px;
+            }
+        }
+
+        .qr-preview img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.25rem;
+        }
+
+        .qr-info {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+            font-weight: 300;
+            letter-spacing: 0.01em;
+        }
+
+        .qr-info strong {
+            color: var(--primary);
+            font-weight: 500;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .alert {
+            background: var(--bg);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius);
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            display: none;
+            animation: shake 0.5s ease-out;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .alert-error {
+            color: var(--destructive);
+            border-left: 4px solid var(--destructive);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--primary);
+            font-weight: 300;
+        }
+
+        .spinner {
+            border: 3px solid hsla(214, 100%, 48%, 0.1);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1.5rem 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .form-section {
+                padding: 2rem 1.5rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            button {
+                padding: 1.2rem 2rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .form-section {
+                padding: 1.5rem 1.25rem;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            body::before {
+                display: none;
+            }
+
+            .container {
+                max-width: none;
+            }
+
+            .header, .form-section, .alert, .qr-info, .loading {
+                display: none !important;
+            }
+
+            .result {
+                display: block !important;
+            }
+
+            .qr-preview {
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+                background: transparent;
+            }
+
+            .qr-preview img {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>QR Generator</h1>
+            <p class="subtitle">Create printable admission labels</p>
+        </div>
+
+        <div class="content-wrapper">
+            <div>
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="admission_number">Admission Number</label>
+                        <input
+                            type="text"
+                            id="admission_number"
+                            placeholder="Enter admission number"
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="size">Label Size</label>
+                        <select id="size">
+                            <option value="30">30mm × 30mm</option>
+                            <option value="40">40mm × 40mm</option>
+                            <option value="50">50mm × 50mm</option>
+                        </select>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="generateQR()">Generate</button>
+                        <button class="btn-success" id="printBtn" onclick="printLabel()">Print</button>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Generating your QR code...</p>
+                </div>
+
+                <div class="alert alert-error" id="error"></div>
+            </div>
+
+            <div class="result" id="result">
+                <div class="qr-container empty" id="qrContainer">
+                    <div class="qr-placeholder" id="qrPlaceholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                        <p>Your QR code will appear here</p>
+                    </div>
+                    <div class="qr-preview" id="qrPreview"></div>
+                </div>
+                <div class="qr-info" id="qrInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function generateQR() {
+            const admissionNumber = document.getElementById('admission_number').value.trim();
+            const size = document.getElementById('size').value;
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const qrContainer = document.getElementById('qrContainer');
+            const qrPlaceholder = document.getElementById('qrPlaceholder');
+            const qrPreview = document.getElementById('qrPreview');
+            const qrInfo = document.getElementById('qrInfo');
+            const printBtn = document.getElementById('printBtn');
+
+            // Reset
+            error.style.display = 'none';
+            printBtn.style.display = 'none';
+
+            if (!admissionNumber) {
+                showError('Please enter an admission number');
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/qr-gen/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        admission_number: admissionNumber,
+                        size: parseInt(size)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to generate QR code');
+                }
+
+                // Display QR code
+                qrPreview.innerHTML = `<img src="${data.image}" alt="QR Code">`;
+                qrInfo.innerHTML =
+                    `<strong>Admission Number:</strong> ${data.admission_number}<br>` +
+                    `<strong>Label Size:</strong> ${data.size_mm}mm x ${data.size_mm}mm`;
+
+                // Show QR code, hide placeholder
+                qrContainer.classList.remove('empty');
+                qrPlaceholder.style.display = 'none';
+                qrPreview.style.display = 'block';
+                qrInfo.style.display = 'block';
+                printBtn.style.display = 'block';
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function printLabel() {
+            window.print();
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        // Allow Enter key to generate
+        document.getElementById('admission_number').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateQR();
+            }
+        });
+    </script>
+</body>
+</html>
