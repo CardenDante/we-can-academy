@@ -130,13 +130,21 @@ export function ProfilePictureDisplay({
   size = "md",
   className = "",
 }: ProfilePictureDisplayProps) {
+  const [imageError, setImageError] = useState(false);
+
   const sizeClasses = {
     sm: "w-16 h-16",
     md: "w-24 h-24",
     lg: "w-32 h-32",
   };
 
-  if (profilePictureUrl) {
+  // Reset error state when profilePictureUrl changes
+  useEffect(() => {
+    setImageError(false);
+  }, [profilePictureUrl]);
+
+  // Show custom image if available and hasn't errored
+  if (profilePictureUrl && !imageError) {
     return (
       <div
         className={`${sizeClasses[size]} rounded-full overflow-hidden ${className}`}
@@ -145,12 +153,16 @@ export function ProfilePictureDisplay({
           src={profilePictureUrl}
           alt="Profile"
           className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error("Failed to load profile picture:", profilePictureUrl);
+            setImageError(true);
+          }}
         />
       </div>
     );
   }
 
-  // Show gender-based default avatar
+  // Show gender-based default avatar (fallback for missing/error images)
   if (gender === "MALE") {
     return (
       <div

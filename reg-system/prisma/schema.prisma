@@ -70,6 +70,8 @@ model Weekend {
   id           String    @id @default(cuid())
   saturdayDate DateTime  @db.Date
   name         String
+  isCompleted  Boolean   @default(false) // Marks if weekend is complete and missed students processed
+  completedAt  DateTime? // When the weekend was marked complete
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   sessions     Session[]
@@ -77,6 +79,7 @@ model Weekend {
 
   @@unique([saturdayDate])
   @@index([saturdayDate])
+  @@index([isCompleted])
 }
 
 model Session {
@@ -127,9 +130,13 @@ model Student {
   phoneNumber     String
   identification  String
   profilePicture  String?      // URL path to profile picture
+  churchDistrict  String
   isExpelled      Boolean      @default(false)
   expelledAt      DateTime?
   expelledReason  String?
+  hasWarning      Boolean      @default(false)
+  warnedAt        DateTime?
+  warningReason   String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   attendances     Attendance[]
@@ -139,6 +146,8 @@ model Student {
   @@index([courseId])
   @@index([fullName])
   @@index([isExpelled])
+  @@index([hasWarning])
+  @@index([churchDistrict])
 }
 
 model CheckIn {
@@ -150,15 +159,22 @@ model CheckIn {
   day       DayOfWeekend
   checkedAt DateTime @default(now())
   checkedBy String
+  status    CheckInStatus @default(PRESENT) // Track if present or marked as missed
 
   @@unique([studentId, weekendId, day])
   @@index([studentId])
   @@index([weekendId])
   @@index([day])
   @@index([checkedAt])
+  @@index([status])
   // Composite indexes for optimized queries
   @@index([weekendId, day, checkedAt]) // For getTodayCheckIns() - filter by weekend+day, order by time
   @@index([studentId, weekendId]) // For chapel attendance verification - check if student checked in this weekend
+}
+
+enum CheckInStatus {
+  PRESENT // Student checked in
+  MISSED  // Student did not check in (marked after weekend ends)
 }
 
 model Attendance {

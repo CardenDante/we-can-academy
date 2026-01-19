@@ -12,6 +12,7 @@ export async function registerStudent(data: {
   phoneNumber: string;
   identification: string;
   admissionNumber: string;
+  churchDistrict: string;
   profilePicture?: string;
 }) {
   const currentUser = await getUser();
@@ -359,5 +360,77 @@ export async function deleteProfilePicture(studentId: string) {
 
   revalidatePath("/cashier");
   revalidatePath("/cashier/students");
+  revalidatePath("/security");
+}
+
+export async function warnStudent(studentId: string, reason: string) {
+  const currentUser = await getUser();
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    throw new Error("Only administrators can warn students.");
+  }
+
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { fullName: true, hasWarning: true, isExpelled: true },
+  });
+
+  if (!student) {
+    throw new Error("Student not found.");
+  }
+
+  if (student.isExpelled) {
+    throw new Error(`${student.fullName} is expelled and cannot be warned.`);
+  }
+
+  if (student.hasWarning) {
+    throw new Error(`${student.fullName} already has an active warning.`);
+  }
+
+  if (!reason || reason.trim().length < 5) {
+    throw new Error("Please provide a reason for the warning (at least 5 characters).");
+  }
+
+  await prisma.student.update({
+    where: { id: studentId },
+    data: {
+      hasWarning: true,
+      warnedAt: new Date(),
+      warningReason: reason.trim(),
+    },
+  });
+
+  revalidatePath("/admin/students");
+  revalidatePath("/security");
+}
+
+export async function removeWarning(studentId: string) {
+  const currentUser = await getUser();
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    throw new Error("Only administrators can remove warnings.");
+  }
+
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { fullName: true, hasWarning: true },
+  });
+
+  if (!student) {
+    throw new Error("Student not found.");
+  }
+
+  if (!student.hasWarning) {
+    throw new Error(`${student.fullName} does not have an active warning.`);
+  }
+
+  await prisma.student.update({
+    where: { id: studentId },
+    data: {
+      hasWarning: false,
+      warnedAt: null,
+      warningReason: null,
+    },
+  });
+
+  revalidatePath("/admin/students");
   revalidatePath("/security");
 }

@@ -48,11 +48,29 @@ export async function checkInStudent(admissionNumber: string) {
     };
   }
 
-  // Find the current weekend
+  // Check-in is ONLY allowed on Saturday (6) or Sunday (0)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const dayOfWeek = today.getDay();
+
+  // Only allow check-in on weekends
+  if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+    return {
+      success: false,
+      status: "not_weekend" as const,
+      message: "Check-in is only available on Saturday and Sunday. Please come back on the weekend.",
+      student: {
+        id: student.id,
+        fullName: student.fullName,
+        admissionNumber: student.admissionNumber,
+        gender: student.gender,
+        course: student.course,
+        profilePicture: student.profilePicture,
+        isExpelled: false,
+      },
+    };
+  }
 
   // Calculate the Saturday of this weekend
   let saturdayDate: Date;
@@ -60,13 +78,9 @@ export async function checkInStudent(admissionNumber: string) {
     // Sunday - go back 1 day to Saturday
     saturdayDate = new Date(today);
     saturdayDate.setDate(today.getDate() - 1);
-  } else if (dayOfWeek === 6) {
+  } else {
     // Saturday - use today
     saturdayDate = new Date(today);
-  } else {
-    // Weekday - find the previous Saturday
-    saturdayDate = new Date(today);
-    saturdayDate.setDate(today.getDate() - dayOfWeek - 1);
   }
 
   const weekend = await prisma.weekend.findUnique({
@@ -135,6 +149,8 @@ export async function checkInStudent(admissionNumber: string) {
         course: student.course,
         profilePicture: student.profilePicture,
         isExpelled: false,
+        hasWarning: student.hasWarning,
+        warningReason: student.warningReason,
       },
       checkIn,
     };
@@ -155,6 +171,8 @@ export async function checkInStudent(admissionNumber: string) {
       course: student.course,
       profilePicture: student.profilePicture,
       isExpelled: false,
+      hasWarning: student.hasWarning,
+      warningReason: student.warningReason,
     },
     checkIn,
   };

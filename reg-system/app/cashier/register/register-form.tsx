@@ -33,6 +33,7 @@ export function RegisterStudentForm() {
   const [success, setSuccess] = useState("");
   const [selectedGender, setSelectedGender] = useState<"MALE" | "FEMALE" | "">("");
   const [selectedCourse, setSelectedCourse] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
   const [formKey, setFormKey] = useState(0);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
@@ -71,9 +72,10 @@ export function RegisterStudentForm() {
       phoneNumber: formData.get("phoneNumber") as string,
       identification: formData.get("identification") as string,
       admissionNumber: formData.get("admissionNumber") as string,
+      churchDistrict: selectedDistrict,
     };
 
-    if (!data.gender || !data.courseId) {
+    if (!data.gender || !data.courseId || !data.churchDistrict) {
       setError("Please fill in all required fields");
       setLoading(false);
       return;
@@ -103,6 +105,7 @@ export function RegisterStudentForm() {
     setSuccess("Student registered successfully!");
     setSelectedGender("");
     setSelectedCourse("");
+    setSelectedDistrict("");
     setProfileImage(null);
     setProfileImageFile(null);
     setFormKey(prev => prev + 1);
@@ -237,6 +240,29 @@ export function RegisterStudentForm() {
                 <Input id="areaOfResidence" name="areaOfResidence" placeholder="e.g. Githurai 44" className="pl-9" required />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="churchDistrict">Church District</Label>
+              <Select value={selectedDistrict} onValueChange={setSelectedDistrict} required>
+                <SelectTrigger className="pl-3">
+                  <SelectValue placeholder="Select district" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="Ruaraka">Ruaraka</SelectItem>
+                  <SelectItem value="Roysambu">Roysambu</SelectItem>
+                  <SelectItem value="Mwiki">Mwiki</SelectItem>
+                  <SelectItem value="Embakasi">Embakasi</SelectItem>
+                  <SelectItem value="Githurai 44">Githurai 44</SelectItem>
+                  <SelectItem value="Githurai 45">Githurai 45</SelectItem>
+                  <SelectItem value="Huruma">Huruma</SelectItem>
+                  <SelectItem value="Mathare">Mathare</SelectItem>
+                  <SelectItem value="Kasarani">Kasarani</SelectItem>
+                  <SelectItem value="Starehe">Starehe</SelectItem>
+                  <SelectItem value="CBD">CBD</SelectItem>
+                  <SelectItem value="Church">Church</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="h-[1px] bg-border/40 w-full" />
@@ -366,7 +392,7 @@ export function RegisterStudentForm() {
               {/* Profile Picture */}
               <div className="flex justify-center">
                 <ProfilePictureDisplay
-                  profilePictureUrl={scannedStudent.profilePictureUrl}
+                  profilePictureUrl={scannedStudent.profilePicture}
                   gender={scannedStudent.gender}
                   size="lg"
                 />
@@ -401,6 +427,12 @@ export function RegisterStudentForm() {
                   <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-muted-foreground">Area:</span>
                   <span>{scannedStudent.areaOfResidence}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">District:</span>
+                  <span className="text-xs">{scannedStudent.churchDistrict || "N/A"}</span>
                 </div>
 
                 <div className="flex items-center gap-2">

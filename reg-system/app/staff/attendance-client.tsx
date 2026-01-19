@@ -144,6 +144,7 @@ export function AttendanceClient() {
     lastSubmitTime.current = now;
 
     setLoading(true);
+    // Clear previous messages when starting a new scan
     setError("");
     setSuccess("");
     setScanStatus(null);
@@ -181,8 +182,7 @@ export function AttendanceClient() {
         setAdmissionNumber("");
         // Re-focus input for next scan
         setTimeout(() => inputRef.current?.focus(), 100);
-        // Keep error visible longer (5 seconds)
-        setTimeout(() => setError(""), 5000);
+        // Messages persist until next entry
         return;
       }
 
@@ -193,7 +193,7 @@ export function AttendanceClient() {
 
       // Re-focus input for next scan
       setTimeout(() => inputRef.current?.focus(), 100);
-      setTimeout(() => setSuccess(""), 3000);
+      // Messages persist until next entry
     } catch (err: any) {
       // Catch any unexpected errors
       const errorMessage = err?.message || err?.toString() || "Failed to mark attendance";
@@ -203,8 +203,7 @@ export function AttendanceClient() {
       setAdmissionNumber("");
       // Re-focus input for next scan
       setTimeout(() => inputRef.current?.focus(), 100);
-      // Keep error visible longer (5 seconds)
-      setTimeout(() => setError(""), 5000);
+      // Messages persist until next entry
     } finally {
       setLoading(false);
     }
@@ -410,18 +409,6 @@ export function AttendanceClient() {
               </p>
             </div>
 
-            {error && (
-              <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-destructive" />
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                {success}
-              </div>
-            )}
           </form>
         </CardContent>
       </Card>
@@ -436,6 +423,20 @@ export function AttendanceClient() {
             : "border-border"
         }`}>
           <CardContent className="py-4 sm:py-6">
+            {/* Success/Error Messages - Displayed inside the card */}
+            {error && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 text-green-600 text-sm rounded flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                <span>{success}</span>
+              </div>
+            )}
+
             {/* Mobile Layout: Compact horizontal with centered course */}
             <div className="flex md:hidden flex-col items-center gap-3">
               {/* Profile Picture */}
@@ -481,61 +482,63 @@ export function AttendanceClient() {
             </div>
 
             {/* Desktop Layout: Horizontal */}
-            <div className="hidden md:flex items-center gap-6">
-              {/* Profile Picture - Large display */}
-              <div className="shrink-0">
-                <div className={`rounded-full p-1 ${
-                  scanStatus === "success" ? "ring-4 ring-green-500/30" : ""
-                }`}>
-                  <ProfilePictureDisplay
-                    profilePictureUrl={scannedStudent.profilePicture}
-                    gender={scannedStudent.gender}
-                    size="lg"
-                  />
-                </div>
-              </div>
-
-              {/* Student Info */}
-              <div className="flex-1 min-w-0">
-                {/* Name - Large */}
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <h2 className="text-2xl font-bold tracking-tight truncate">
-                    {scannedStudent.fullName}
-                  </h2>
-                </div>
-
-                {/* Admission Number */}
-                <div className="flex items-center gap-2 mb-2">
-                  <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-lg font-mono font-medium">
-                    {scannedStudent.admissionNumber}
-                  </span>
-                </div>
-
-                {/* Course/Class */}
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Badge variant="secondary" className="text-sm">
-                    {scannedStudent.course?.name || "N/A"}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Status Indicator */}
-              <div className="shrink-0">
-                {scanStatus === "success" && (
-                  <div className="flex flex-col items-center gap-1">
-                    <CheckCircle className="h-12 w-12 text-green-500" />
-                    <span className="text-xs font-medium text-green-600 uppercase">Marked</span>
+            <div className="hidden md:block">
+              <div className="flex items-center gap-6">
+                {/* Profile Picture - Large display */}
+                <div className="shrink-0">
+                  <div className={`rounded-full p-1 ${
+                    scanStatus === "success" ? "ring-4 ring-green-500/30" : ""
+                  }`}>
+                    <ProfilePictureDisplay
+                      profilePictureUrl={scannedStudent.profilePicture}
+                      gender={scannedStudent.gender}
+                      size="lg"
+                    />
                   </div>
-                )}
-                {scanStatus === "error" && (
-                  <div className="flex flex-col items-center gap-1">
-                    <AlertCircle className="h-12 w-12 text-destructive" />
-                    <span className="text-xs font-medium text-destructive uppercase">Error</span>
+                </div>
+
+                {/* Student Info */}
+                <div className="flex-1 min-w-0">
+                  {/* Name - Large */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <h2 className="text-2xl font-bold tracking-tight truncate">
+                      {scannedStudent.fullName}
+                    </h2>
                   </div>
-                )}
+
+                  {/* Admission Number */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-lg font-mono font-medium">
+                      {scannedStudent.admissionNumber}
+                    </span>
+                  </div>
+
+                  {/* Course/Class */}
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Badge variant="secondary" className="text-sm">
+                      {scannedStudent.course?.name || "N/A"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Status Indicator */}
+                <div className="shrink-0">
+                  {scanStatus === "success" && (
+                    <div className="flex flex-col items-center gap-1">
+                      <CheckCircle className="h-12 w-12 text-green-500" />
+                      <span className="text-xs font-medium text-green-600 uppercase">Marked</span>
+                    </div>
+                  )}
+                  {scanStatus === "error" && (
+                    <div className="flex flex-col items-center gap-1">
+                      <AlertCircle className="h-12 w-12 text-destructive" />
+                      <span className="text-xs font-medium text-destructive uppercase">Error</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>

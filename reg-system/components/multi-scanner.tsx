@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScanLine, Nfc, Loader2, Wifi, WifiOff, CheckCircle } from "lucide-react";
+import { ScanLine, Nfc, Loader2, Wifi, WifiOff, CheckCircle, QrCode, Camera } from "lucide-react";
+import { Html5QrcodeScanner, Html5Qrcode } from "html5-qrcode";
 
 interface MultiScannerProps {
   onScan: (admissionNumber: string) => void;
@@ -48,12 +49,16 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
   const [nfcActive, setNfcActive] = useState(false);
   const [nfcError, setNfcError] = useState("");
   const [nfcStatus, setNfcStatus] = useState<string>("");
-  const [scanMode, setScanMode] = useState<"keyboard" | "nfc">("keyboard");
+  const [qrActive, setQrActive] = useState(false);
+  const [qrError, setQrError] = useState("");
+  const [scanMode, setScanMode] = useState<"keyboard" | "nfc" | "qr">("keyboard");
   const [lastScanTime, setLastScanTime] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const nfcReaderRef = useRef<NDEFReader | null>(null);
   const pollingRef = useRef<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const qrScannerRef = useRef<Html5Qrcode | null>(null);
+  const qrScannerId = "qr-scanner-region";
 
   // Barcode scanner detection - scanners type fast and end with Enter
   const keyTimestamps = useRef<number[]>([]);
@@ -62,6 +67,8 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
 
   // Check what NFC readers are available
   useEffect(() => {
+    // NFC DISABLED - Commenting out NFC functionality
+    /*
     // Check for Web NFC (mobile browsers)
     if (typeof window !== "undefined" && "NDEFReader" in window) {
       setNfcReaderType("web-nfc");
@@ -70,10 +77,13 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
 
     // Check for ACR122U service
     checkAcr122uService();
+    */
   }, []);
 
   // Check if ACR122U service is available
+  // NFC DISABLED - Commented out
   const checkAcr122uService = async () => {
+    /*
     try {
       const response = await fetch("/api/nfc?action=health", {
         signal: AbortSignal.timeout(3000),
@@ -90,6 +100,7 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
       // ACR122U service not available, that's fine
       console.log("ACR122U service not available");
     }
+    */
   };
 
   // Auto-focus input on mount and after each scan
@@ -345,11 +356,107 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
     }
   };
 
+  // QR Code scanning
+  const startQrScan = async () => {
+    try {
+      console.log("[QR Scanner] Starting QR scanner...");
+
+      // Check if camera API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Camera API not supported. Please use HTTPS or a modern browser.");
+      }
+
+      setQrActive(true);
+      setQrError("");
+      setScanMode("qr");
+
+      // Wait for DOM element to be rendered before initializing scanner
+      // Use setTimeout to let React render the qr-scanner-region div first
+      setTimeout(async () => {
+        try {
+          const element = document.getElementById(qrScannerId);
+          if (!element) {
+            throw new Error("QR scanner element not found in DOM. Please try again.");
+          }
+
+          const html5QrCode = new Html5Qrcode(qrScannerId);
+          qrScannerRef.current = html5QrCode;
+
+          console.log("[QR Scanner] Requesting camera access...");
+
+          // Start continuous scanning
+          await html5QrCode.start(
+            { facingMode: "environment" }, // Use back camera
+            {
+              fps: 10, // Scan 10 times per second for fast detection
+              qrbox: { width: 250, height: 250 }, // Scanning area
+            },
+            (decodedText) => {
+              // Success callback - QR code detected
+              console.log("[QR Scanner] Decoded:", decodedText);
+              handleScan(decodedText);
+              // Continue scanning - don't stop after each scan
+            },
+            (errorMessage) => {
+              // Error callback - just ignore, it fires constantly when no QR detected
+            }
+          );
+
+          console.log("[QR Scanner] Camera started successfully");
+        } catch (err: any) {
+          console.error("[QR Scanner] Initialization error:", err);
+
+          if (err.name === "NotAllowedError") {
+            setQrError("Camera permission denied. Please allow camera access and try again.");
+          } else if (err.name === "NotFoundError") {
+            setQrError("No camera found on this device. QR scanning requires a camera.");
+          } else if (err.name === "NotReadableError") {
+            setQrError("Camera is already in use by another application. Please close other apps and try again.");
+          } else if (err.message && err.message.includes("HTTPS")) {
+            setQrError("Camera requires HTTPS. Please access this page using https://");
+          } else if (err.message && err.message.includes("secure")) {
+            setQrError("Camera requires secure context (HTTPS). Please use https:// instead of http://");
+          } else {
+            setQrError(`QR Scanner error: ${err.message || err.toString() || "Failed to start camera. Check console for details."}`);
+          }
+          setQrActive(false);
+          setScanMode("keyboard");
+        }
+      }, 100); // 100ms delay to ensure DOM is ready
+
+    } catch (err: any) {
+      console.error("[QR Scanner] Full error:", err);
+      console.error("[QR Scanner] Error name:", err.name);
+      console.error("[QR Scanner] Error message:", err.message);
+      setQrError(`Setup error: ${err.message || "Failed to initialize QR scanner"}`);
+      setQrActive(false);
+      setScanMode("keyboard");
+    }
+  };
+
+  const stopQrScan = async () => {
+    if (qrScannerRef.current) {
+      try {
+        await qrScannerRef.current.stop();
+        qrScannerRef.current.clear();
+      } catch (err) {
+        console.error("[QR Scanner] Error stopping:", err);
+      }
+      qrScannerRef.current = null;
+    }
+    setQrActive(false);
+    setScanMode("keyboard");
+    inputRef.current?.focus();
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (nfcReaderType === "acr122u" && pollingRef.current) {
         stopAcr122uPolling();
+      }
+      if (qrScannerRef.current) {
+        qrScannerRef.current.stop().catch(console.error);
       }
     };
   }, [nfcReaderType, stopAcr122uPolling]);
@@ -369,7 +476,8 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
           Barcode Ready
         </Badge>
 
-        {nfcSupported && (
+        {/* NFC DISABLED - Commented out */}
+        {/* {nfcSupported && (
           <Badge
             variant={nfcActive ? "default" : "outline"}
             className={`gap-2 cursor-pointer transition-all ${nfcActive ? "bg-blue-500" : ""}`}
@@ -387,7 +495,25 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
               </>
             )}
           </Badge>
-        )}
+        )} */}
+
+        <Badge
+          variant={qrActive ? "default" : "outline"}
+          className={`gap-2 cursor-pointer transition-all ${qrActive ? "bg-purple-500" : ""}`}
+          onClick={qrActive ? stopQrScan : startQrScan}
+        >
+          {qrActive ? (
+            <>
+              <Camera className="h-3 w-3 animate-pulse" />
+              QR Scanner Active - Tap to stop
+            </>
+          ) : (
+            <>
+              <QrCode className="h-3 w-3" />
+              Enable QR Scanner
+            </>
+          )}
+        </Badge>
       </div>
 
       {/* NFC Status */}
@@ -402,6 +528,25 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
       {nfcError && (
         <div className="text-center text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
           {nfcError}
+        </div>
+      )}
+
+      {/* QR Error */}
+      {qrError && (
+        <div className="text-center text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
+          {qrError}
+        </div>
+      )}
+
+      {/* QR Scanner Camera View */}
+      {qrActive && (
+        <div className="relative rounded-lg overflow-hidden bg-black">
+          <div id={qrScannerId} className="w-full" />
+          <div className="absolute bottom-4 left-0 right-0 text-center">
+            <p className="text-white text-sm bg-black/50 inline-block px-4 py-2 rounded">
+              Position QR code within the frame
+            </p>
+          </div>
         </div>
       )}
 
@@ -434,9 +579,13 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
 
       {/* Instructions */}
       <div className="text-center text-xs text-muted-foreground space-y-1">
-        <p>Scan barcode, tap NFC card, or type admission number and press Enter</p>
-        {nfcSupported && !nfcActive && (
+        <p>Scan barcode, scan QR code, or type admission number and press Enter</p>
+        {/* NFC DISABLED */}
+        {/* {nfcSupported && !nfcActive && (
           <p className="text-blue-500">{readerTypeLabel} available - click the badge above to enable</p>
+        )} */}
+        {!qrActive && (
+          <p className="text-purple-500">QR Scanner available - click the badge above to enable</p>
         )}
       </div>
     </div>

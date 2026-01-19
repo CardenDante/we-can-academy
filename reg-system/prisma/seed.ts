@@ -11,6 +11,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const courses = [
+  "AI",
   "Art",
   "Automotive",
   "Camera Operation",

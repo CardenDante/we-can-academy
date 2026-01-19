@@ -18,7 +18,7 @@ import { ProfilePictureDisplay } from "@/components/profile-picture";
 import { MultiScanner } from "@/components/multi-scanner";
 import { AttendancePassport } from "@/components/attendance-passport";
 
-type CheckInStatus = "checked_in" | "already_checked_in" | "expelled" | "not_found" | "no_weekend";
+type CheckInStatus = "checked_in" | "already_checked_in" | "expelled" | "not_found" | "no_weekend" | "not_weekend";
 
 export function SecurityClient() {
   const [scanResult, setScanResult] = useState<{
@@ -95,31 +95,51 @@ export function SecurityClient() {
       {scanResult && scanResult.student && (
         <Card className={`border-2 transition-all duration-300 ${
           scanResult.status === "expelled"
-            ? "border-red-600 bg-red-500/10"
+            ? "border-red-600 bg-red-600"
             : scanResult.status === "checked_in"
-            ? "border-green-500 bg-green-500/5"
+            ? "border-green-500 bg-green-500"
             : scanResult.status === "already_checked_in"
-            ? "border-blue-500 bg-blue-500/5"
+            ? "border-blue-500 bg-blue-500"
+            : scanResult.status === "not_weekend"
+            ? "border-amber-500 bg-amber-500"
             : "border-amber-500 bg-amber-500/5"
         }`}>
           <CardContent className="py-4">
             <div className="flex items-center justify-center gap-3">
               {scanResult.status === "expelled" && (
                 <>
-                  <ShieldAlert className="h-8 w-8 text-red-600" />
-                  <span className="text-xl font-bold text-red-600 uppercase tracking-wide">EXPELLED - DO NOT ALLOW ENTRY</span>
+                  <ShieldAlert className="h-8 w-8 text-white" />
+                  <span className="text-xl font-bold text-white uppercase tracking-wide">EXPELLED - DO NOT ALLOW ENTRY</span>
                 </>
               )}
               {scanResult.status === "checked_in" && (
                 <>
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                  <span className="text-xl font-bold text-green-600 uppercase tracking-wide">Checked In</span>
+                  <CheckCircle className="h-8 w-8 text-white" />
+                  <span className="text-xl font-bold text-white uppercase tracking-wide">Checked In</span>
+                  {scanResult.student?.hasWarning && (
+                    <div className="flex items-center gap-2 ml-4 px-3 py-1 bg-amber-600 rounded">
+                      <AlertTriangle className="h-5 w-5 text-white" />
+                      <span className="text-sm font-bold text-white uppercase">Warning</span>
+                    </div>
+                  )}
                 </>
               )}
               {scanResult.status === "already_checked_in" && (
                 <>
-                  <Clock className="h-8 w-8 text-blue-600" />
-                  <span className="text-xl font-bold text-blue-600 uppercase tracking-wide">Already In</span>
+                  <Clock className="h-8 w-8 text-white" />
+                  <span className="text-xl font-bold text-white uppercase tracking-wide">Already In</span>
+                  {scanResult.student?.hasWarning && (
+                    <div className="flex items-center gap-2 ml-4 px-3 py-1 bg-amber-600 rounded">
+                      <AlertTriangle className="h-5 w-5 text-white" />
+                      <span className="text-sm font-bold text-white uppercase">Warning</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {scanResult.status === "not_weekend" && (
+                <>
+                  <Clock className="h-8 w-8 text-white" />
+                  <span className="text-xl font-bold text-white uppercase tracking-wide">Check-In Only on Weekends</span>
                 </>
               )}
             </div>
@@ -136,6 +156,11 @@ export function SecurityClient() {
                 <>
                   <AlertTriangle className="h-8 w-8 text-amber-600" />
                   <span className="text-xl font-bold text-amber-600 uppercase tracking-wide">No Active Session</span>
+                </>
+              ) : scanResult.status === "not_weekend" ? (
+                <>
+                  <Clock className="h-8 w-8 text-amber-600" />
+                  <span className="text-xl font-bold text-amber-600 uppercase tracking-wide">Check-In Only on Weekends</span>
                 </>
               ) : (
                 <>
@@ -206,9 +231,20 @@ export function SecurityClient() {
                 {scanResult.status === "expelled" && scanResult.reason && (
                   <>
                     <div className="h-[1px] bg-border/40 w-full my-2" />
-                    <div className="p-2 bg-red-500/10 rounded text-sm text-red-600">
+                    <div className="p-2 bg-red-600 rounded text-sm text-white">
                       <strong>Expelled Reason:</strong>
                       <div className="mt-1">{scanResult.reason}</div>
+                    </div>
+                  </>
+                )}
+
+                {/* Warning Reason if applicable */}
+                {scanResult.student?.hasWarning && scanResult.student?.warningReason && (
+                  <>
+                    <div className="h-[1px] bg-border/40 w-full my-2" />
+                    <div className="p-2 bg-amber-600 rounded text-sm text-white">
+                      <strong>Warning Reason:</strong>
+                      <div className="mt-1">{scanResult.student.warningReason}</div>
                     </div>
                   </>
                 )}
