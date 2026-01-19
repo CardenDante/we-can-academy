@@ -138,6 +138,11 @@ export function ProfilePictureDisplay({
     lg: "w-32 h-32",
   };
 
+  // Debug logging
+  useEffect(() => {
+    console.log("[ProfilePictureDisplay] URL:", profilePictureUrl, "Gender:", gender);
+  }, [profilePictureUrl, gender]);
+
   // Reset error state when profilePictureUrl changes
   useEffect(() => {
     setImageError(false);
