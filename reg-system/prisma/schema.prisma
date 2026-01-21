@@ -12,6 +12,7 @@ enum Role {
   CASHIER
   STAFF
   SECURITY
+  TEACHER
 }
 
 enum Gender {
@@ -37,8 +38,22 @@ model User {
   role      Role
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  teacher   Teacher? // One-to-one relation if user is a teacher
 
   @@index([username])
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([classId])
 }
 
 model Course {
@@ -61,6 +76,7 @@ model Class {
   updatedAt      DateTime        @updatedAt
   sessionClasses SessionClass[]
   attendances    Attendance[]
+  teachers       Teacher[]       // Teachers assigned to this class
 
   @@unique([courseId, name])
   @@index([courseId])

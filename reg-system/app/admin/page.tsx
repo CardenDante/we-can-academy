@@ -2,30 +2,32 @@ import { getUser } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { Card, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight, TrendingUp } from "lucide-react";
+import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight, TrendingUp, UserCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
   const user = await getUser();
   if (!user) return null;
 
-  // Fetch statistics - Classes commented out (chapel-only mode)
+  // Fetch statistics
   const [
     totalStudents,
     totalUsers,
     totalCourses,
-    // totalClasses, // Commented out - class features disabled
+    totalClasses,
+    totalTeachers,
     totalWeekends,
-    totalSessions,
+    totalChapelSessions,
   ] = await Promise.all([
     prisma.student.count(),
     prisma.user.count(),
     prisma.course.count(),
-    // prisma.class.count(), // Commented out - class features disabled
+    prisma.class.count(),
+    prisma.teacher.count(),
     prisma.weekend.count(),
     prisma.session.count({
       where: {
-        sessionType: "CHAPEL", // Only count chapel sessions
+        sessionType: "CHAPEL",
       },
     }),
   ]);
@@ -52,7 +54,6 @@ export default async function AdminPage() {
       color: "text-emerald-500",
       bgColor: "bg-emerald-50 dark:bg-emerald-950/20",
     },
-    /* Commented out - class features disabled
     {
       title: "Total Classes",
       value: totalClasses,
@@ -60,7 +61,13 @@ export default async function AdminPage() {
       color: "text-amber-500",
       bgColor: "bg-amber-50 dark:bg-amber-950/20",
     },
-    */
+    {
+      title: "Total Teachers",
+      value: totalTeachers,
+      icon: UserCheck,
+      color: "text-cyan-500",
+      bgColor: "bg-cyan-50 dark:bg-cyan-950/20",
+    },
     {
       title: "Total Weekends",
       value: totalWeekends,
@@ -70,7 +77,7 @@ export default async function AdminPage() {
     },
     {
       title: "Chapel Sessions",
-      value: totalSessions,
+      value: totalChapelSessions,
       icon: Settings,
       color: "text-indigo-500",
       bgColor: "bg-indigo-50 dark:bg-indigo-950/20",
@@ -100,21 +107,19 @@ export default async function AdminPage() {
       color: "text-purple-500",
     },
     {
-      title: "Courses",
-      description: "View available courses",
+      title: "Courses & Classes",
+      description: "Manage courses and class divisions",
       href: "/admin/courses",
       icon: BookOpen,
       color: "text-emerald-500",
     },
-    /* Commented out - class features disabled
     {
-      title: "Classes",
-      description: "Manage class divisions (A, B, C)",
-      href: "/admin/classes",
-      icon: ClipboardList,
-      color: "text-amber-500",
+      title: "Teachers",
+      description: "Manage teacher assignments",
+      href: "/admin/teachers",
+      icon: UserCheck,
+      color: "text-cyan-500",
     },
-    */
     {
       title: "Weekends",
       description: "Manage academy weekends",
@@ -123,8 +128,8 @@ export default async function AdminPage() {
       color: "text-rose-500",
     },
     {
-      title: "Chapel Sessions",
-      description: "Manage chapel sessions",
+      title: "Sessions",
+      description: "Manage chapel and class sessions",
       href: "/admin/sessions",
       icon: Settings,
       color: "text-indigo-500",
@@ -145,7 +150,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Statistics Row */}
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 mb-12">
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7 mb-12">
           {statistics.map((stat, index) => {
             const Icon = stat.icon;
             return (

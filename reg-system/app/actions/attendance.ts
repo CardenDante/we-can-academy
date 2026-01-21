@@ -11,11 +11,56 @@ export async function markAttendance(data: {
 }) {
   try {
     const currentUser = await getUser();
-    if (!currentUser || (currentUser.role !== "STAFF" && currentUser.role !== "ADMIN")) {
+    if (!currentUser || !["STAFF", "ADMIN", "TEACHER"].includes(currentUser.role)) {
       return {
         success: false,
         error: "You don't have permission to mark attendance. Please contact an administrator."
       };
+    }
+
+    // If teacher, verify they own this class
+    if (currentUser.role === "TEACHER") {
+      const teacher = await prisma.teacher.findUnique({
+        where: { userId: currentUser.id },
+      });
+
+      if (!teacher) {
+        return {
+          success: false,
+          error: "Teacher profile not found. Please contact an administrator."
+        };
+      }
+
+      // For class sessions, verify the teacher is assigned to this class
+      const session = await prisma.session.findUnique({
+        where: { id: data.sessionId },
+        include: {
+          sessionClasses: {
+            where: {
+              classId: teacher.classId,
+            },
+          },
+        },
+      });
+
+      if (!session) {
+        return {
+          success: false,
+          error: "Session not found."
+        };
+      }
+
+      if (session.sessionType === "CLASS" && session.sessionClasses.length === 0) {
+        return {
+          success: false,
+          error: "You don't have permission to mark attendance for this class."
+        };
+      }
+
+      // Ensure classId is set for class sessions
+      if (session.sessionType === "CLASS") {
+        data.classId = teacher.classId;
+      }
     }
 
     // Get the session to determine the date
@@ -168,8 +213,22 @@ export async function getAttendanceBySession(
   offset: number = 0
 ) {
   const currentUser = await getUser();
-  if (!currentUser || (currentUser.role !== "STAFF" && currentUser.role !== "ADMIN")) {
+  if (!currentUser || !["STAFF", "ADMIN", "TEACHER"].includes(currentUser.role)) {
     throw new Error("You don't have permission to view attendance records.");
+  }
+
+  // If teacher, verify they own this class
+  if (currentUser.role === "TEACHER") {
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: currentUser.id },
+    });
+
+    if (!teacher) {
+      throw new Error("Teacher profile not found.");
+    }
+
+    // Force filter to teacher's class
+    classId = teacher.classId;
   }
 
   const where = classId
@@ -190,8 +249,27 @@ export async function getAttendanceBySession(
 
 export async function deleteAttendance(id: string) {
   const currentUser = await getUser();
-  if (!currentUser || (currentUser.role !== "STAFF" && currentUser.role !== "ADMIN")) {
+  if (!currentUser || !["STAFF", "ADMIN", "TEACHER"].includes(currentUser.role)) {
     throw new Error("You don't have permission to delete attendance records.");
+  }
+
+  // If teacher, verify the attendance record is for their class
+  if (currentUser.role === "TEACHER") {
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: currentUser.id },
+    });
+
+    if (!teacher) {
+      throw new Error("Teacher profile not found.");
+    }
+
+    const attendance = await prisma.attendance.findUnique({
+      where: { id },
+    });
+
+    if (!attendance || attendance.classId !== teacher.classId) {
+      throw new Error("You don't have permission to delete this attendance record.");
+    }
   }
 
   try {
