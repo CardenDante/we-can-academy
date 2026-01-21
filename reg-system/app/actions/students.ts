@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { deleteFromR2, extractR2Key } from "@/lib/r2";
 
 export async function registerStudent(data: {
   fullName: string;
@@ -229,15 +230,13 @@ export async function deleteStudent(id: string) {
     select: { profilePicture: true },
   });
 
-  // Delete profile picture file if it exists
+  // Delete profile picture from R2 if it exists
   if (student?.profilePicture) {
     try {
-      const { unlink } = await import("fs/promises");
-      const { join } = await import("path");
-      const filePath = join(process.cwd(), "public", student.profilePicture);
-      await unlink(filePath);
+      const r2Key = extractR2Key(student.profilePicture);
+      await deleteFromR2(r2Key);
     } catch (error) {
-      console.log("Failed to delete profile picture file:", error);
+      console.log("Failed to delete profile picture from R2:", error);
       // Continue with student deletion even if file deletion fails
     }
   }
@@ -344,12 +343,10 @@ export async function deleteProfilePicture(studentId: string) {
 
   if (student?.profilePicture) {
     try {
-      const { unlink } = await import("fs/promises");
-      const { join } = await import("path");
-      const filePath = join(process.cwd(), "public", student.profilePicture);
-      await unlink(filePath);
+      const r2Key = extractR2Key(student.profilePicture);
+      await deleteFromR2(r2Key);
     } catch (error) {
-      console.log("Failed to delete profile picture file:", error);
+      console.log("Failed to delete profile picture from R2:", error);
     }
   }
 

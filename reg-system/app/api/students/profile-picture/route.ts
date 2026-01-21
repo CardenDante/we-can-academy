@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, unlink } from "fs/promises";
-import { join } from "path";
+import {
+  uploadToR2,
+  deleteFromR2,
+  extractR2Key,
+  generateProfilePictureKey,
+} from "@/lib/r2";
 
-const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "profile-pictures");
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/jpg"];
 
@@ -54,25 +57,20 @@ export async function POST(request: NextRequest) {
 
     // Delete old profile picture if exists
     if (student.profilePicture) {
-      const oldFilePath = join(process.cwd(), "public", student.profilePicture);
       try {
-        await unlink(oldFilePath);
+        const oldKey = extractR2Key(student.profilePicture);
+        await deleteFromR2(oldKey);
       } catch (error) {
         // Ignore error if file doesn't exist
-        console.log("Old file not found, continuing...");
+        console.log("Old file not found or failed to delete, continuing...");
       }
     }
 
-    // Generate filename and save file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const fileName = `${studentId}.jpg`;
-    const filePath = join(UPLOAD_DIR, fileName);
-
-    await writeFile(filePath, buffer);
+    // Generate R2 key and upload file
+    const r2Key = generateProfilePictureKey(studentId);
+    const profilePictureUrl = await uploadToR2(file, r2Key);
 
     // Update database with new profile picture URL
-    const profilePictureUrl = `/uploads/profile-pictures/${fileName}`;
     await prisma.student.update({
       where: { id: studentId },
       data: { profilePicture: profilePictureUrl },
@@ -118,13 +116,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
-    // Delete file if exists
+    // Delete file from R2 if exists
     if (student.profilePicture) {
-      const filePath = join(process.cwd(), "public", student.profilePicture);
       try {
-        await unlink(filePath);
+        const r2Key = extractR2Key(student.profilePicture);
+        await deleteFromR2(r2Key);
       } catch (error) {
-        console.log("File not found, continuing...");
+        console.log("File not found or failed to delete, continuing...");
       }
     }
 
