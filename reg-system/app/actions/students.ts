@@ -147,7 +147,6 @@ export async function getStudentByAdmissionWithHistory(admissionNumber: string) 
               weekend: true,
             },
           },
-          class: true,
         },
         orderBy: { markedAt: "desc" },
         take: 50, // Limit to last 50 attendance records for performance
@@ -190,7 +189,6 @@ export async function getStudentByIdWithHistory(id: string) {
               weekend: true,
             },
           },
-          class: true,
         },
         orderBy: { markedAt: "desc" },
         take: 100, // More records for admin analytics

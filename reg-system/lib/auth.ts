@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { authConfig } from "@/auth.config";
 
-type Role = "ADMIN" | "CASHIER" | "STAFF" | "SECURITY";
+type Role = "ADMIN" | "CASHIER" | "STAFF" | "SECURITY" | "TEACHER";
 
 export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
   ...authConfig,

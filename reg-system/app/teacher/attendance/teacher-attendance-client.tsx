@@ -38,12 +38,14 @@ interface TeacherAttendanceClientProps {
   sessions: any[];
   students: any[];
   classId: string;
+  courseId: string;
 }
 
 export function TeacherAttendanceClient({
   sessions,
   students,
   classId,
+  courseId,
 }: TeacherAttendanceClientProps) {
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [admissionNumber, setAdmissionNumber] = useState("");
@@ -129,10 +131,10 @@ export function TeacherAttendanceClient({
 
     try {
       // Get student info first
-      const studentResult = await getStudentByAdmission(admissionNumber.trim());
+      const student = await getStudentByAdmission(admissionNumber.trim());
 
-      if (!studentResult.success || !studentResult.student) {
-        setError(studentResult.error || "Student not found");
+      if (!student) {
+        setError("Student not found");
         setScanStatus("error");
         setLoading(false);
         setAdmissionNumber("");
@@ -140,12 +142,11 @@ export function TeacherAttendanceClient({
         return;
       }
 
-      const student = studentResult.student;
       setScannedStudent(student);
 
-      // Verify student is in this class
-      if (student.classId !== classId) {
-        setError(`${student.fullName} is not in your class`);
+      // Verify student is in this course
+      if (student.courseId !== courseId) {
+        setError(`${student.fullName} is not in your course`);
         setScanStatus("error");
         setLoading(false);
         setAdmissionNumber("");
@@ -311,8 +312,8 @@ export function TeacherAttendanceClient({
               >
                 <div className="flex items-center gap-4">
                   <ProfilePictureDisplay
-                    src={scannedStudent.profilePicture}
-                    alt={scannedStudent.fullName}
+                    profilePictureUrl={scannedStudent.profilePicture}
+                    gender={scannedStudent.gender}
                     size="md"
                   />
                   <div className="flex-1">
@@ -373,8 +374,8 @@ export function TeacherAttendanceClient({
                       <TableRow key={attendance.id}>
                         <TableCell className="flex items-center gap-3">
                           <ProfilePictureDisplay
-                            src={attendance.student.profilePicture}
-                            alt={attendance.student.fullName}
+                            profilePictureUrl={attendance.student.profilePicture}
+                            gender={attendance.student.gender}
                             size="sm"
                           />
                           <span className="font-medium">

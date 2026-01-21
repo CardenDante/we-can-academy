@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth";
 import { hash } from "bcryptjs";
 
@@ -120,11 +120,6 @@ export async function getTeachers() {
         class: {
           include: {
             course: true,
-            _count: {
-              select: {
-                students: true,
-              },
-            },
           },
         },
       },
@@ -169,11 +164,6 @@ export async function getTeacherByUserId(userId: string) {
         class: {
           include: {
             course: true,
-            _count: {
-              select: {
-                students: true,
-              },
-            },
           },
         },
       },
@@ -419,7 +409,6 @@ export async function getTeacherStudentById(studentId: string) {
               weekend: true,
             },
           },
-          class: true,
         },
         orderBy: { markedAt: "desc" },
         take: 50,

@@ -28,10 +28,11 @@ export default async function TeacherStudentsPage() {
   if (!teacher) {
     return (
       <div className="p-6">
-        <Header
-          title="My Students"
-          description="Teacher profile not found"
-        />
+        <Header user={{ name: user.name || "Teacher", role: user.role }} />
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold">My Students</h2>
+          <p className="text-muted-foreground mt-2">Teacher profile not found</p>
+        </div>
       </div>
     );
   }
@@ -52,10 +53,11 @@ export default async function TeacherStudentsPage() {
 
   return (
     <div className="p-6">
-      <Header
-        title="My Students"
-        description={`${teacher.class.course.name} - ${teacher.class.name} (${students.length} student${students.length !== 1 ? "s" : ""})`}
-      />
+      <Header user={{ name: user.name || "Teacher", role: user.role }} />
+      <div className="mt-6">
+        <h2 className="text-2xl font-bold">My Students</h2>
+        <p className="text-muted-foreground mt-2">{`${teacher.class.course.name} - ${teacher.class.name} (${students.length} student${students.length !== 1 ? "s" : ""})`}</p>
+      </div>
 
       {students.length === 0 ? (
         <Card className="mt-6 p-8 text-center">

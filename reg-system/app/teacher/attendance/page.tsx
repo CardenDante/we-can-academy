@@ -25,10 +25,11 @@ export default async function TeacherAttendancePage() {
   if (!teacher) {
     return (
       <div className="p-6">
-        <Header
-          title="Mark Attendance"
-          description="Teacher profile not found"
-        />
+        <Header user={{ name: user.name || "Teacher", role: user.role }} />
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold">Mark Attendance</h2>
+          <p className="text-muted-foreground mt-2">Teacher profile not found</p>
+        </div>
       </div>
     );
   }
@@ -73,15 +74,14 @@ export default async function TeacherAttendancePage() {
     ],
   });
 
-  // Get students in teacher's class
+  // Get students in teacher's course
   const students = await prisma.student.findMany({
     where: {
-      classId: teacher.classId,
+      courseId: teacher.class.courseId,
       isExpelled: false,
     },
     include: {
       course: true,
-      class: true,
     },
     orderBy: {
       fullName: "asc",
@@ -90,15 +90,17 @@ export default async function TeacherAttendancePage() {
 
   return (
     <div className="p-6">
-      <Header
-        title="Mark Attendance"
-        description={`${teacher.class.course.name} - ${teacher.class.name}`}
-      />
+      <Header user={{ name: user.name || "Teacher", role: user.role }} />
+      <div className="mt-6">
+        <h2 className="text-2xl font-bold">Mark Attendance</h2>
+        <p className="text-muted-foreground mt-2">{`${teacher.class.course.name} - ${teacher.class.name}`}</p>
+      </div>
 
       <TeacherAttendanceClient
         sessions={JSON.parse(JSON.stringify(sessions))}
         students={JSON.parse(JSON.stringify(students))}
         classId={teacher.classId}
+        courseId={teacher.class.courseId}
       />
     </div>
   );

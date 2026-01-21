@@ -35,10 +35,11 @@ export default async function TeacherPage() {
   if (!teacher) {
     return (
       <div className="p-6">
-        <Header
-          title="Teacher Dashboard"
-          description="Teacher profile not found"
-        />
+        <Header user={{ name: user.name || "Teacher", role: user.role }} />
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold">Teacher Dashboard</h2>
+          <p className="text-muted-foreground mt-2">Teacher profile not found</p>
+        </div>
         <div className="mt-6 text-center text-muted-foreground">
           Your teacher profile could not be found. Please contact an administrator.
         </div>
@@ -60,7 +61,7 @@ export default async function TeacherPage() {
         gte: today,
       },
       classId: teacher.classId,
-      markedBy: user.name,
+      markedBy: user.name || undefined,
     },
   });
 
@@ -124,10 +125,11 @@ export default async function TeacherPage() {
 
   return (
     <div className="p-6">
-      <Header
-        title={`Welcome, ${user.name}`}
-        description={`${teacher.class.course.name} - ${teacher.class.name}`}
-      />
+      <Header user={{ name: user.name || "Teacher", role: user.role }} />
+      <div className="mt-6">
+        <h2 className="text-2xl font-bold">Welcome, {user.name}</h2>
+        <p className="text-muted-foreground mt-2">{`${teacher.class.course.name} - ${teacher.class.name}`}</p>
+      </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statistics.map((stat, index) => {

@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
       where: { admissionNumber },
       include: {
         course: true,
-        class: true,
       },
     });
 
@@ -136,7 +135,6 @@ export async function POST(request: NextRequest) {
         student: {
           include: {
             course: true,
-            class: true,
           },
         },
         weekend: true,
@@ -228,7 +226,6 @@ export async function GET(request: NextRequest) {
         student: {
           include: {
             course: true,
-            class: true,
           },
         },
         weekend: true,

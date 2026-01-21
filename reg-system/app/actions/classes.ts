@@ -22,7 +22,6 @@ export async function getClasses() {
       _count: {
         select: {
           sessionClasses: true,
-          students: true,
         },
       },
     },
@@ -54,11 +53,6 @@ export async function getClassesByCourse(courseId: string) {
           },
         },
       },
-      _count: {
-        select: {
-          students: true,
-        },
-      },
     },
     orderBy: { name: "asc" },
   });
@@ -86,17 +80,6 @@ export async function getClassById(classId: string) {
               username: true,
             },
           },
-        },
-      },
-      students: {
-        include: {
-          course: true,
-        },
-        where: {
-          isExpelled: false,
-        },
-        orderBy: {
-          fullName: "asc",
         },
       },
       sessionClasses: {
@@ -180,7 +163,6 @@ export async function deleteClass(id: string) {
       _count: {
         select: {
           attendances: true,
-          students: true,
           teachers: true,
         },
       },
@@ -189,13 +171,6 @@ export async function deleteClass(id: string) {
 
   if (!classToDelete) {
     throw new Error("Class not found. It may have already been deleted.");
-  }
-
-  if (classToDelete._count.students > 0) {
-    throw new Error(
-      `Cannot delete "${classToDelete.name}" (${classToDelete.course.name}) because it has ` +
-      `${classToDelete._count.students} student(s). Please reassign students first.`
-    );
   }
 
   if (classToDelete._count.teachers > 0) {
@@ -226,83 +201,5 @@ export async function deleteClass(id: string) {
   }
 }
 
-/**
- * Assign students to a class
- */
-export async function assignStudentsToClass(
-  classId: string,
-  studentIds: string[]
-) {
-  const user = await getUser();
-  if (!user || !["ADMIN", "CASHIER"].includes(user.role)) {
-    throw new Error("Unauthorized");
-  }
-
-  const classData = await prisma.class.findUnique({
-    where: { id: classId },
-    include: {
-      course: true,
-    },
-  });
-
-  if (!classData) {
-    throw new Error("Class not found");
-  }
-
-  await prisma.student.updateMany({
-    where: {
-      id: { in: studentIds },
-      courseId: classData.courseId,
-    },
-    data: {
-      classId,
-    },
-  });
-
-  revalidatePath("/admin/classes");
-  revalidatePath(`/admin/classes/${classId}`);
-}
-
-/**
- * Remove student from class
- */
-export async function removeStudentFromClass(studentId: string) {
-  const user = await getUser();
-  if (!user || !["ADMIN", "CASHIER"].includes(user.role)) {
-    throw new Error("Unauthorized");
-  }
-
-  await prisma.student.update({
-    where: { id: studentId },
-    data: {
-      classId: null,
-    },
-  });
-
-  revalidatePath("/admin/classes");
-  revalidatePath("/admin/students");
-}
-
-/**
- * Get unassigned students for a course
- */
-export async function getUnassignedStudentsByCourse(courseId: string) {
-  const user = await getUser();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  return await prisma.student.findMany({
-    where: {
-      courseId,
-      classId: null,
-      isExpelled: false,
-    },
-    include: {
-      course: true,
-    },
-    orderBy: {
-      fullName: "asc",
-    },
-  });
-}
+// Student assignment functions removed - students are not assigned to classes
+// Students are enrolled in courses and can attend any class in their course

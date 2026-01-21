@@ -64,7 +64,6 @@ export async function GET(request: NextRequest) {
         student: {
           include: {
             course: true,
-            class: true,
           },
         },
         session: {
@@ -257,7 +256,7 @@ export async function POST(request: NextRequest) {
         markedBy: user.name,
       },
       include: {
-        student: { include: { course: true, class: true } },
+        student: { include: { course: true } },
         session: { include: { weekend: true } },
         class: { include: { course: true } },
       },

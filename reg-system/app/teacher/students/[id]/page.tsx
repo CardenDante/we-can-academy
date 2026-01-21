@@ -52,10 +52,11 @@ export default async function TeacherStudentDetailPage({
     <div className="p-6">
       <BackButton href="/teacher/students" />
 
-      <Header
-        title="Student Profile"
-        description="View student details and attendance records"
-      />
+      <Header user={{ name: user.name || "Teacher", role: user.role }} />
+      <div className="mt-6">
+        <h2 className="text-2xl font-bold">Student Profile</h2>
+        <p className="text-muted-foreground mt-2">View student details and attendance records</p>
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Student Info Card */}
