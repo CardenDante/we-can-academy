@@ -228,7 +228,6 @@ export function TeachersClient({ initialTeachers, classes }: TeachersClientProps
                     <TableHead>Name</TableHead>
                     <TableHead>Username</TableHead>
                     <TableHead>Class Assignment</TableHead>
-                    <TableHead>Students</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -252,12 +251,6 @@ export function TeachersClient({ initialTeachers, classes }: TeachersClientProps
                             </p>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          <Users className="mr-1 h-3 w-3" />
-                          {teacher.class._count.students}
-                        </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(teacher.user.createdAt).toLocaleDateString()}

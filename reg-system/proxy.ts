@@ -64,6 +64,11 @@ export default auth(async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
 
+  if (pathname.startsWith("/teacher") && role !== "TEACHER" && role !== "ADMIN") {
+    console.log(`[Middleware] Access denied to /teacher - Role is ${role}`);
+    return NextResponse.redirect(new URL("/unauthorized", request.url));
+  }
+
   return NextResponse.next();
 });
 
@@ -77,6 +82,8 @@ function getRoleHomePage(role: string) {
       return "/staff";
     case "SECURITY":
       return "/security";
+    case "TEACHER":
+      return "/teacher";
     default:
       return "/login";
   }

@@ -4,7 +4,24 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Get classes with minimal data - optimized for performance
+ * Use this for dropdowns, selects, and lists that don't need full details
+ */
 export async function getClasses() {
+  return await prisma.class.findMany({
+    include: {
+      course: true,
+    },
+    orderBy: [{ course: { name: "asc" } }, { name: "asc" }],
+  });
+}
+
+/**
+ * Get classes with full details including teachers and session counts
+ * Use this only when you need complete class information
+ */
+export async function getClassesWithDetails() {
   return await prisma.class.findMany({
     include: {
       course: true,

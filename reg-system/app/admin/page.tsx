@@ -2,7 +2,7 @@ import { getUser } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { Card, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight, TrendingUp, UserCheck } from "lucide-react";
+import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight, TrendingUp, UserCheck, FolderKanban, Church, School } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
@@ -107,11 +107,18 @@ export default async function AdminPage() {
       color: "text-purple-500",
     },
     {
-      title: "Courses & Classes",
-      description: "Manage courses and class divisions",
+      title: "Courses",
+      description: "View and manage courses",
       href: "/admin/courses",
       icon: BookOpen,
       color: "text-emerald-500",
+    },
+    {
+      title: "Classes",
+      description: "Manage class divisions (A, B, C)",
+      href: "/admin/classes",
+      icon: FolderKanban,
+      color: "text-orange-500",
     },
     {
       title: "Teachers",
@@ -128,11 +135,18 @@ export default async function AdminPage() {
       color: "text-rose-500",
     },
     {
-      title: "Sessions",
-      description: "Manage chapel and class sessions",
+      title: "Chapel Sessions",
+      description: "Manage chapel sessions for weekends",
       href: "/admin/sessions",
-      icon: Settings,
+      icon: Church,
       color: "text-indigo-500",
+    },
+    {
+      title: "Class Sessions",
+      description: "Manage class sessions for courses",
+      href: "/admin/class-sessions",
+      icon: School,
+      color: "text-violet-500",
     },
   ];
 

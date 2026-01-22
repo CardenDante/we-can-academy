@@ -2,7 +2,7 @@ import { getUser } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { redirect } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Users, BookOpen, Calendar, CheckCircle } from "lucide-react";
+import { Users, CheckCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
@@ -34,23 +34,25 @@ export default async function TeacherPage() {
 
   if (!teacher) {
     return (
-      <div className="p-6">
+      <div className="min-h-screen bg-background">
         <Header user={{ name: user.name || "Teacher", role: user.role }} />
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold">Teacher Dashboard</h2>
-          <p className="text-muted-foreground mt-2">Teacher profile not found</p>
-        </div>
-        <div className="mt-6 text-center text-muted-foreground">
-          Your teacher profile could not be found. Please contact an administrator.
-        </div>
+        <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
+              Teacher Dashboard
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground font-light">
+              Teacher profile not found
+            </p>
+          </div>
+          <div className="text-center text-muted-foreground">
+            Your teacher profile could not be found. Please contact an administrator.
+          </div>
+        </main>
       </div>
     );
   }
 
-  // Get current/latest weekend
-  const latestWeekend = await prisma.weekend.findFirst({
-    orderBy: { saturdayDate: "desc" },
-  });
 
   // Get today's class attendance marked by this teacher
   const today = new Date();
@@ -64,29 +66,6 @@ export default async function TeacherPage() {
       markedBy: user.name || undefined,
     },
   });
-
-  // Get total attendance marked by this teacher
-  const totalAttendance = await prisma.attendance.count({
-    where: {
-      classId: teacher.classId,
-    },
-  });
-
-  // Get upcoming sessions for this class
-  let upcomingSessions = 0;
-  if (latestWeekend) {
-    upcomingSessions = await prisma.session.count({
-      where: {
-        weekendId: latestWeekend.id,
-        sessionType: "CLASS",
-        sessionClasses: {
-          some: {
-            classId: teacher.classId,
-          },
-        },
-      },
-    });
-  }
 
   const statistics = [
     {
@@ -105,33 +84,22 @@ export default async function TeacherPage() {
       bgColor: "bg-emerald-50 dark:bg-emerald-950/20",
       href: "/teacher/attendance",
     },
-    {
-      title: "Total Attendance",
-      value: totalAttendance,
-      icon: BookOpen,
-      color: "text-purple-500",
-      bgColor: "bg-purple-50 dark:bg-purple-950/20",
-      href: "/teacher/attendance",
-    },
-    {
-      title: "Upcoming Sessions",
-      value: upcomingSessions,
-      icon: Calendar,
-      color: "text-orange-500",
-      bgColor: "bg-orange-50 dark:bg-orange-950/20",
-      href: "/teacher/attendance",
-    },
   ];
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-background">
       <Header user={{ name: user.name || "Teacher", role: user.role }} />
-      <div className="mt-6">
-        <h2 className="text-2xl font-bold">Welcome, {user.name}</h2>
-        <p className="text-muted-foreground mt-2">{`${teacher.class.course.name} - ${teacher.class.name}`}</p>
-      </div>
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
+            Welcome, {user.name}
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground font-light">
+            {`${teacher.class.course.name} - ${teacher.class.name}`}
+          </p>
+        </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2">
         {statistics.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -154,43 +122,44 @@ export default async function TeacherPage() {
         })}
       </div>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <Link href="/teacher/attendance">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg p-3 bg-emerald-50 dark:bg-emerald-950/20">
-                  <CheckCircle className="h-6 w-6 text-emerald-500" />
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <Link href="/teacher/attendance">
+            <Card className="hover:border-primary transition-colors cursor-pointer">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg p-3 bg-emerald-50 dark:bg-emerald-950/20">
+                    <CheckCircle className="h-6 w-6 text-emerald-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Mark Attendance</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Mark class attendance for your students
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold">Mark Attendance</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Mark class attendance for your students
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        </Link>
+              </CardHeader>
+            </Card>
+          </Link>
 
-        <Link href="/teacher/students">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg p-3 bg-blue-50 dark:bg-blue-950/20">
-                  <Users className="h-6 w-6 text-blue-500" />
+          <Link href="/teacher/students">
+            <Card className="hover:border-primary transition-colors cursor-pointer">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg p-3 bg-blue-50 dark:bg-blue-950/20">
+                    <Users className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">My Students</h3>
+                    <p className="text-sm text-muted-foreground">
+                      View all students in your class
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold">My Students</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View all students in your class
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        </Link>
-      </div>
+              </CardHeader>
+            </Card>
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }

@@ -49,16 +49,21 @@ export default async function TeacherStudentDetailPage({
   ).size;
 
   return (
-    <div className="p-6">
-      <BackButton href="/teacher/students" />
-
+    <div className="min-h-screen bg-background">
       <Header user={{ name: user.name || "Teacher", role: user.role }} />
-      <div className="mt-6">
-        <h2 className="text-2xl font-bold">Student Profile</h2>
-        <p className="text-muted-foreground mt-2">View student details and attendance records</p>
-      </div>
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <BackButton href="/teacher/students" />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
+            Student Profile
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground font-light">
+            View student details and attendance records
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
         {/* Student Info Card */}
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -336,7 +341,8 @@ export default async function TeacherStudentDetailPage({
             </CardContent>
           </Card>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

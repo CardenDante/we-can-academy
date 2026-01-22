@@ -3,6 +3,7 @@ import { Header } from "@/components/header";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { TeacherAttendanceClient } from "./teacher-attendance-client";
+import { BackButton } from "@/components/back-button";
 
 export default async function TeacherAttendancePage() {
   const user = await getUser();
@@ -24,12 +25,20 @@ export default async function TeacherAttendancePage() {
 
   if (!teacher) {
     return (
-      <div className="p-6">
+      <div className="min-h-screen bg-background">
         <Header user={{ name: user.name || "Teacher", role: user.role }} />
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold">Mark Attendance</h2>
-          <p className="text-muted-foreground mt-2">Teacher profile not found</p>
-        </div>
+        <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <BackButton href="/teacher" />
+
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
+              Mark Attendance
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground font-light">
+              Teacher profile not found
+            </p>
+          </div>
+        </main>
       </div>
     );
   }
@@ -89,19 +98,27 @@ export default async function TeacherAttendancePage() {
   });
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-background">
       <Header user={{ name: user.name || "Teacher", role: user.role }} />
-      <div className="mt-6">
-        <h2 className="text-2xl font-bold">Mark Attendance</h2>
-        <p className="text-muted-foreground mt-2">{`${teacher.class.course.name} - ${teacher.class.name}`}</p>
-      </div>
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <BackButton href="/teacher" />
 
-      <TeacherAttendanceClient
-        sessions={JSON.parse(JSON.stringify(sessions))}
-        students={JSON.parse(JSON.stringify(students))}
-        classId={teacher.classId}
-        courseId={teacher.class.courseId}
-      />
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
+            Mark Attendance
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground font-light">
+            {`${teacher.class.course.name} - ${teacher.class.name}`}
+          </p>
+        </div>
+
+        <TeacherAttendanceClient
+          sessions={JSON.parse(JSON.stringify(sessions))}
+          students={JSON.parse(JSON.stringify(students))}
+          classId={teacher.classId}
+          courseId={teacher.class.courseId}
+        />
+      </main>
     </div>
   );
 }

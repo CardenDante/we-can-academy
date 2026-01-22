@@ -135,3 +135,58 @@ export async function deleteSession(id: string) {
     throw new Error(`Failed to delete session "${session.name}". Please try again.`);
   }
 }
+
+/**
+ * Assign a session to a class
+ */
+export async function assignSessionToClass(data: {
+  sessionId: string;
+  classId: string;
+}) {
+  const currentUser = await getUser();
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    // Check if already assigned
+    const existing = await prisma.sessionClass.findFirst({
+      where: {
+        sessionId: data.sessionId,
+        classId: data.classId,
+      },
+    });
+
+    if (existing) {
+      return { success: false, error: "Session already assigned to this class" };
+    }
+
+    await prisma.sessionClass.create({
+      data: {
+        sessionId: data.sessionId,
+        classId: data.classId,
+      },
+    });
+
+    revalidatePath(`/admin/classes/${data.classId}/sessions`);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Failed to assign session" };
+  }
+}
+
+/**
+ * Remove a session from a class
+ */
+export async function removeSessionFromClass(sessionClassId: string) {
+  const currentUser = await getUser();
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.sessionClass.delete({
+    where: { id: sessionClassId },
+  });
+
+  revalidatePath("/admin/classes");
+}

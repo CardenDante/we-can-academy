@@ -17,6 +17,8 @@ export default async function Home() {
       redirect("/staff");
     case "SECURITY":
       redirect("/security");
+    case "TEACHER":
+      redirect("/teacher");
     default:
       redirect("/login");
   }
