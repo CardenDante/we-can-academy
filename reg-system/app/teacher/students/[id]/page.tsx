@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { getTeacherStudentById } from "@/app/actions/teachers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackButton } from "@/components/back-button";
-import Image from "next/image";
+import { ProfilePictureDisplay } from "@/components/profile-picture";
+import { AttendancePassport } from "@/components/attendance-passport";
+import { Badge } from "@/components/ui/badge";
 import {
   User,
   MapPin,
@@ -36,17 +38,12 @@ export default async function TeacherStudentDetailPage({
   }
 
   // Calculate attendance stats
-  const classAttendanceCount = student.attendances.length;
-  const chapelCheckInCount = student.checkIns.filter(
-    (c) => c.status === "PRESENT"
-  ).length;
+  const classAttendances = student.attendances.filter((att: any) => att.session.sessionType === "CLASS");
+  const chapelAttendances = student.attendances.filter((att: any) => att.session.sessionType === "CHAPEL");
 
-  // Get unique weekends attended
-  const weekendsAttended = new Set(
-    student.checkIns
-      .filter((c) => c.status === "PRESENT")
-      .map((c) => c.weekendId)
-  ).size;
+  const classAttendanceCount = classAttendances.length;
+  const chapelAttendanceCount = chapelAttendances.length;
+  const checkInCount = student.checkIns.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,284 +60,142 @@ export default async function TeacherStudentDetailPage({
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-        {/* Student Info Card */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Student Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex flex-col items-center">
-              <div className="relative h-32 w-32 rounded-full overflow-hidden bg-muted">
-                {student.profilePicture ? (
-                  <Image
-                    src={student.profilePicture}
-                    alt={student.fullName}
-                    fill
-                    className="object-cover"
+        <div className="space-y-6">
+          {/* Student Details and Class Attendance - Grid Layout */}
+          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3 items-stretch">
+            {/* Student Details Card */}
+            <Card className="luxury-card border-0 flex flex-col">
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Student Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 flex-1 flex flex-col">
+                {/* Profile Picture */}
+                <div className="flex justify-center mb-2">
+                  <ProfilePictureDisplay
+                    profilePictureUrl={student.profilePicture}
+                    gender={student.gender}
+                    size="lg"
                   />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <User className="h-16 w-16 text-muted-foreground" />
+                </div>
+
+                {/* Name and Admission Number */}
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <div className="text-center">
+                    <div className="text-base font-bold tracking-tight">{student.fullName}</div>
+                  </div>
+                  <div className="h-6 w-[1px] bg-border" />
+                  <div className="text-center">
+                    <div className="text-sm font-medium">{student.admissionNumber}</div>
+                  </div>
+                </div>
+
+                {/* Gender Badge */}
+                <div className="flex justify-center mb-2">
+                  <Badge variant={student.gender === "MALE" ? "default" : "secondary"} className="text-xs">
+                    {student.gender}
+                  </Badge>
+                </div>
+
+                {student.hasWarning && (
+                  <div className="flex justify-center mb-2">
+                    <Badge variant="destructive" className="text-xs">
+                      Has Warning
+                    </Badge>
                   </div>
                 )}
-              </div>
-              <h3 className="mt-4 text-xl font-semibold text-center">
-                {student.fullName}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {student.admissionNumber}
-              </p>
-              {student.hasWarning && (
-                <div className="mt-2 px-3 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-xs font-medium rounded-full">
-                  Has Warning
+
+                <div className="h-[1px] bg-border/40 w-full my-2" />
+
+                <div className="grid gap-1.5 flex-1">
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-sm text-muted-foreground">Course:</span>
+                    <span className="text-sm font-medium">{student.course.name}</span>
+                  </div>
+
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-sm text-muted-foreground">Phone:</span>
+                    <span className="text-sm">{student.phoneNumber}</span>
+                  </div>
+
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-sm text-muted-foreground">Area:</span>
+                    <span className="text-sm">{student.areaOfResidence}</span>
+                  </div>
+
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-sm text-muted-foreground">ID/Passport:</span>
+                    <span className="text-sm">{student.identification}</span>
+                  </div>
+
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-sm text-muted-foreground">Church District:</span>
+                    <span className="text-sm">{student.churchDistrict}</span>
+                  </div>
                 </div>
-              )}
+              </CardContent>
+            </Card>
+
+            {/* Class Attendance Passport - Spans 2 columns on xl */}
+            <div className="xl:col-span-2 flex">
+              <AttendancePassport
+                attendances={classAttendances}
+                weekends={student.weekends}
+                type="CLASS"
+                studentId={student.id}
+                className="flex-1"
+              />
             </div>
-
-            <div className="space-y-3 pt-4 border-t">
-              <div className="flex items-start gap-3">
-                <School className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Course</p>
-                  <p className="font-medium">{student.course.name}</p>
-                </div>
-              </div>
-
-
-              <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Area</p>
-                  <p className="font-medium">{student.areaOfResidence}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Phone className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{student.phoneNumber}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <IdCard className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">ID/Passport</p>
-                  <p className="font-medium">{student.identification}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Church className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Church District</p>
-                  <p className="font-medium">{student.churchDistrict}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Attendance Summary */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Class Attendance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-emerald-500" />
-                  <p className="text-2xl font-bold">{classAttendanceCount}</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  sessions attended
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Chapel Check-ins
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Church className="h-5 w-5 text-blue-500" />
-                  <p className="text-2xl font-bold">{chapelCheckInCount}</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  times checked in
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Weekends Attended
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-purple-500" />
-                  <p className="text-2xl font-bold">{weekendsAttended}</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  weekends present
-                </p>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Class Attendance History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Class Attendance History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {student.attendances.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="mx-auto h-12 w-12 opacity-50 mb-3" />
-                  <p>No class attendance records yet</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {student.attendances.map((attendance) => (
-                    <div
-                      key={attendance.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/20">
-                          <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium">
-                            {attendance.session.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(
-                              attendance.session.weekend.saturdayDate
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}{" "}
-                            - {attendance.session.day}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">
-                          {new Date(attendance.markedAt).toLocaleTimeString(
-                            "en-US",
-                            {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            }
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          by {attendance.markedBy}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Chapel Attendance Passport - Full width */}
+          <AttendancePassport
+            attendances={chapelAttendances}
+            weekends={student.weekends}
+            type="CHAPEL"
+            studentId={student.id}
+          />
 
-          {/* Chapel Check-in History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Chapel Check-in History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {student.checkIns.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Church className="mx-auto h-12 w-12 opacity-50 mb-3" />
-                  <p>No check-in records yet</p>
+          {/* Check-In Records - Full width */}
+          {student.checkIns && student.checkIns.length > 0 && (
+            <Card className="luxury-card border-0">
+              <CardHeader className="pb-4 sm:pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">
+                    Gate Check-In Records
+                  </CardTitle>
+                  <Badge variant="default" className="bg-blue-500 w-fit">
+                    Total: {student.checkIns.length}
+                  </Badge>
                 </div>
-              ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {student.checkIns.map((checkIn) => (
-                    <div
-                      key={checkIn.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                        checkIn.status === "PRESENT"
-                          ? "bg-card hover:bg-muted/50"
-                          : "bg-muted/50 opacity-75"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`p-2 rounded-lg ${
-                            checkIn.status === "PRESENT"
-                              ? "bg-blue-100 dark:bg-blue-900/20"
-                              : "bg-gray-100 dark:bg-gray-900/20"
-                          }`}
-                        >
-                          {checkIn.status === "PRESENT" ? (
-                            <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                          ) : (
-                            <Church className="h-4 w-4 text-gray-400" />
-                          )}
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
+                  {student.checkIns.map((checkIn: any) => {
+                    const checkInDate = new Date(checkIn.checkedAt);
+                    const dayName = checkInDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+                    const monthDay = checkInDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+                    const timeStamp = checkInDate.toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    }).toLowerCase();
+
+                    return (
+                      <div key={checkIn.id} className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
+                          <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-white font-bold stroke-[3]" />
                         </div>
-                        <div>
-                          <p className="font-medium">
-                            {checkIn.weekend.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {checkIn.day} -{" "}
-                            {new Date(
-                              checkIn.weekend.saturdayDate
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </p>
+                        <div className="text-center">
+                          <div className="text-xs font-medium">{dayName}, {monthDay}</div>
+                          <div className="text-[10px] text-muted-foreground">{timeStamp}</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        {checkIn.status === "PRESENT" ? (
-                          <>
-                            <p className="text-sm font-medium">
-                              {new Date(checkIn.checkedAt).toLocaleTimeString(
-                                "en-US",
-                                {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                }
-                              )}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              by {checkIn.checkedBy}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            Missed
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
     </div>

@@ -204,7 +204,7 @@ export function TeachersClient({ initialTeachers, classes }: TeachersClientProps
       </Dialog>
 
       {/* Teachers List */}
-      <Card>
+      <Card className="luxury-card border-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5" />

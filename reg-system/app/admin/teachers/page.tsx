@@ -25,8 +25,8 @@ export default async function AdminTeachersPage() {
       <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <BackButton href="/admin" />
 
-        <div className="mb-8">
-          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-lg sm:text-xl font-medium tracking-tight uppercase text-foreground mb-2 sm:mb-3">
             Manage Teachers
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground font-light">

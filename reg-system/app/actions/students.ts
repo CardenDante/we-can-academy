@@ -151,6 +151,13 @@ export async function getStudentByAdmissionWithHistory(admissionNumber: string) 
         orderBy: { markedAt: "desc" },
         take: 50, // Limit to last 50 attendance records for performance
       },
+      checkIns: {
+        include: {
+          weekend: true,
+        },
+        orderBy: { checkedAt: "desc" },
+        take: 12, // Last 12 check-ins
+      },
     },
   });
 

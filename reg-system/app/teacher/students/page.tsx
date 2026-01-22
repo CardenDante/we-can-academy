@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import Image from "next/image";
 import { User, MapPin, Phone, IdCard } from "lucide-react";
 import { BackButton } from "@/components/back-button";
+import { ProfilePictureDisplay } from "@/components/profile-picture";
 
 export default async function TeacherStudentsPage() {
   const user = await getUser();
@@ -93,20 +93,12 @@ export default async function TeacherStudentsPage() {
                 <Card className="hover:border-primary transition-colors cursor-pointer overflow-hidden h-full">
                   <div className="p-4">
                     <div className="flex items-start gap-4">
-                      <div className="relative h-16 w-16 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                        {student.profilePicture ? (
-                          <Image
-                            src={student.profilePicture}
-                            alt={student.fullName}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center">
-                            <User className="h-8 w-8 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
+                      <ProfilePictureDisplay
+                        profilePictureUrl={student.profilePicture}
+                        gender={student.gender}
+                        size="sm"
+                        className="flex-shrink-0"
+                      />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold truncate">
                           {student.fullName}

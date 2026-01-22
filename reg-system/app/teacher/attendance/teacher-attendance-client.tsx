@@ -299,10 +299,10 @@ export function TeacherAttendanceClient({
         </Card>
       )}
 
-      {/* Student Details and Attendance Passports - Both Chapel and Class */}
+      {/* Student Details and Attendance Passports - Matching Security/Cashier Design */}
       {studentData && scanResult && scanResult.student && (
         <div className="space-y-6">
-          {/* Student Details and Class Attendance Passport */}
+          {/* Student Details and Class Attendance - Grid Layout */}
           <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3 items-stretch">
             {/* Student Details Card */}
             <Card className="luxury-card border-0 flex flex-col">
@@ -377,6 +377,48 @@ export function TeacherAttendanceClient({
             type="CHAPEL"
             studentId={studentData.id}
           />
+
+          {/* Check-In Records - Full width */}
+          {studentData.checkIns && studentData.checkIns.length > 0 && (
+            <Card className="luxury-card border-0">
+              <CardHeader className="pb-4 sm:pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">
+                    Gate Check-In Records
+                  </CardTitle>
+                  <Badge variant="default" className="bg-blue-500 w-fit">
+                    Total: {studentData.checkIns.length}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
+                  {studentData.checkIns.map((checkIn: any) => {
+                    const checkInDate = new Date(checkIn.checkedAt);
+                    const dayName = checkInDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+                    const monthDay = checkInDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+                    const timeStamp = checkInDate.toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    }).toLowerCase();
+
+                    return (
+                      <div key={checkIn.id} className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
+                          <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-white font-bold stroke-[3]" />
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs font-medium">{dayName}, {monthDay}</div>
+                          <div className="text-[10px] text-muted-foreground">{timeStamp}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

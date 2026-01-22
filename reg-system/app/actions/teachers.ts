@@ -400,9 +400,6 @@ export async function getTeacherStudentById(studentId: string) {
     include: {
       course: true,
       attendances: {
-        where: {
-          classId: teacher.classId, // Only class attendance from this teacher's class
-        },
         include: {
           session: {
             include: {
@@ -411,14 +408,12 @@ export async function getTeacherStudentById(studentId: string) {
           },
         },
         orderBy: { markedAt: "desc" },
-        take: 50,
       },
       checkIns: {
         include: {
           weekend: true,
         },
         orderBy: { checkedAt: "desc" },
-        take: 30,
       },
     },
   });
