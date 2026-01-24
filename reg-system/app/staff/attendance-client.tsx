@@ -1,51 +1,32 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { getSessions } from "@/app/actions/academy";
 import { markAttendance, getAttendanceBySession } from "@/app/actions/attendance";
 import { getStudentByAdmission } from "@/app/actions/students";
 import { ProfilePictureDisplay } from "@/components/profile-picture";
-import { CheckCircle, Church, AlertCircle, ScanLine, User, Hash, BookOpen } from "lucide-react";
+import { MultiScanner } from "@/components/multi-scanner";
+import { CheckCircle, Church, AlertCircle, User, Hash, BookOpen, XCircle } from "lucide-react";
 
 export function AttendanceClient() {
-  // Chapel only - class features commented out for future use
-  // const [mode, setMode] = useState<"CLASS" | "CHAPEL">("CLASS");
-  // const [sessions, setSessions] = useState<any[]>([]); // Commented out - only currentSession is needed
-  // const [classes, setClasses] = useState<any[]>([]);
   const [currentSession, setCurrentSession] = useState<any>(null);
-  // const [selectedClass, setSelectedClass] = useState("");
-  const [admissionNumber, setAdmissionNumber] = useState("");
-  const [attendances, setAttendances] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [sessionError, setSessionError] = useState("");
+  const [notFoundAdmission, setNotFoundAdmission] = useState<string | null>(null);
 
   // Scanned student display - auto-updates on each scan
   const [scannedStudent, setScannedStudent] = useState<any>(null);
   const [scanStatus, setScanStatus] = useState<"success" | "error" | null>(null);
 
-  // Barcode scanner detection
-  const inputRef = useRef<HTMLInputElement>(null);
-  const keyTimestamps = useRef<number[]>([]);
-  const lastSubmitTime = useRef(0);
+  const lastSubmitTime = { current: 0 };
 
   useEffect(() => {
     loadSessionsAndDetectCurrent();
-    // loadClasses(); // Commented out - class features disabled
   }, []);
-
-  useEffect(() => {
-    if (currentSession) {
-      loadAttendances();
-    }
-  }, [currentSession]);
 
   // Auto-detect current session based on date and time
   function detectCurrentSession(allSessions: any[]) {
@@ -111,30 +92,8 @@ export function AttendanceClient() {
     }
   }
 
-  /* Commented out - class features disabled
-  async function loadClasses() {
-    try {
-      const data = await getClasses();
-      setClasses(data);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  */
-
-  async function loadAttendances() {
-    try {
-      if (!currentSession) return;
-      // const classId = mode === "CLASS" ? selectedClass : undefined; // Commented out
-      const data = await getAttendanceBySession(currentSession.id, undefined);
-      setAttendances(data);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  // Process attendance marking
-  const processAttendance = useCallback(async (admNum: string) => {
+  // Handle scan from MultiScanner
+  const handleScan = useCallback(async (admNum: string) => {
     const trimmed = admNum.trim();
     if (!trimmed || trimmed.length < 3) return;
 
@@ -148,6 +107,7 @@ export function AttendanceClient() {
     setError("");
     setSuccess("");
     setScanStatus(null);
+    setNotFoundAdmission(null);
 
     try {
       if (!currentSession) {
@@ -160,12 +120,14 @@ export function AttendanceClient() {
       // Verify student exists
       const student = await getStudentByAdmission(trimmed);
       if (!student) {
-        setError(`Student not found: ${trimmed}`);
+        setNotFoundAdmission(trimmed);
         setScannedStudent(null);
         setScanStatus("error");
         return;
       }
 
+      // Clear not found state since student exists
+      setNotFoundAdmission(null);
       // Set scanned student for display (auto-updates each scan)
       setScannedStudent(student);
 
@@ -179,83 +141,21 @@ export function AttendanceClient() {
       if (!result.success) {
         setError(result.error || "Failed to mark attendance");
         setScanStatus("error");
-        setAdmissionNumber("");
-        // Re-focus input for next scan
-        setTimeout(() => inputRef.current?.focus(), 100);
-        // Messages persist until next entry
         return;
       }
 
       setSuccess(`Attendance marked for ${student.fullName}`);
       setScanStatus("success");
-      setAdmissionNumber("");
-      loadAttendances();
-
-      // Re-focus input for next scan
-      setTimeout(() => inputRef.current?.focus(), 100);
-      // Messages persist until next entry
     } catch (err: any) {
       // Catch any unexpected errors
       const errorMessage = err?.message || err?.toString() || "Failed to mark attendance";
       console.error("Attendance marking error:", err);
       setError(errorMessage);
       setScanStatus("error");
-      setAdmissionNumber("");
-      // Re-focus input for next scan
-      setTimeout(() => inputRef.current?.focus(), 100);
-      // Messages persist until next entry
     } finally {
       setLoading(false);
     }
   }, [currentSession]);
-
-  async function handleMarkAttendance(e: React.FormEvent) {
-    e.preventDefault();
-    keyTimestamps.current = [];
-    await processAttendance(admissionNumber);
-  }
-
-  // Handle keyboard input with barcode scanner detection
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const now = Date.now();
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      keyTimestamps.current = [];
-      processAttendance(admissionNumber);
-      return;
-    }
-
-    // Track keystroke timing for barcode detection
-    keyTimestamps.current.push(now);
-    keyTimestamps.current = keyTimestamps.current.filter(t => now - t < 500);
-  };
-
-  // Auto-submit for fast barcode scanner input
-  useEffect(() => {
-    if (admissionNumber.length < 3 || loading) return;
-
-    const timestamps = keyTimestamps.current;
-    if (timestamps.length < 2) return;
-
-    // Calculate average time between keystrokes
-    let totalGap = 0;
-    for (let i = 1; i < timestamps.length; i++) {
-      totalGap += timestamps[i] - timestamps[i - 1];
-    }
-    const avgGap = totalGap / (timestamps.length - 1);
-
-    // If typing is very fast (barcode scanner), auto-submit after brief pause
-    if (avgGap < 50) {
-      const timeoutId = setTimeout(() => {
-        keyTimestamps.current = [];
-        processAttendance(admissionNumber);
-      }, 100);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [admissionNumber, loading, processAttendance]);
-
-  // const filteredSessions = sessions.filter(s => s.sessionType === mode); // Commented out
 
   return (
     <div className="space-y-6">
@@ -336,82 +236,27 @@ export function AttendanceClient() {
             </div>
           )}
 
-          <form onSubmit={handleMarkAttendance} className="space-y-6">
-            {/* Session Selection - Commented out, now auto-detected
-            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="session" className="text-sm font-medium">Select Session *</Label>
-                <Select value={selectedSession} onValueChange={setSelectedSession}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select session" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {filteredSessions.map((session) => (
-                      <SelectItem key={session.id} value={session.id}>
-                        {session.weekend.name} - {session.day} - {session.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {mode === "CLASS" && (
-                <div className="space-y-2">
-                  <Label htmlFor="class" className="text-sm font-medium">Select Class *</Label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
-                      {classes.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.id}>
-                          {cls.course.name} - Class {cls.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-            */}
-
-            <div className="space-y-2">
-              <Label htmlFor="admissionNumber" className="text-sm font-medium">
-                Scan Admission Number *
-              </Label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    ref={inputRef}
-                    id="admissionNumber"
-                    value={admissionNumber}
-                    onChange={(e) => setAdmissionNumber(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Scan barcode or enter admission number"
-                    required
-                    autoFocus
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    className="h-12 pl-10 text-lg font-mono tracking-wider"
-                    disabled={loading || !currentSession}
-                  />
-                </div>
-                <Button type="submit" disabled={loading || !currentSession} className="h-12 sm:min-w-[140px]">
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  {loading ? "Marking..." : "Mark"}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Barcode scanners will auto-submit. Manual entry requires pressing Enter or clicking Mark.
-              </p>
-            </div>
-
-          </form>
+          <MultiScanner
+            onScan={handleScan}
+            disabled={loading || !currentSession}
+            placeholder="Scan barcode, scan QR code, or type admission number to mark attendance..."
+          />
         </CardContent>
       </Card>
+
+      {/* Student Not Found Banner */}
+      {notFoundAdmission && !scannedStudent && (
+        <Card className="border-2 border-destructive bg-destructive/5">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-center gap-3">
+              <XCircle className="h-8 w-8 text-destructive" />
+              <span className="text-xl font-bold text-destructive uppercase tracking-wide">
+                Student Not Found: {notFoundAdmission}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Scanned Student Display - Auto-updates on each scan, no close needed */}
       {scannedStudent && (
