@@ -92,6 +92,13 @@ export function AttendanceClient() {
     }
   }
 
+  // Vibration feedback helper
+  const vibrate = (pattern: number | number[]) => {
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  };
+
   // Handle scan from MultiScanner
   const handleScan = useCallback(async (admNum: string) => {
     const trimmed = admNum.trim();
@@ -114,6 +121,7 @@ export function AttendanceClient() {
         setError("No active session - cannot mark attendance outside session time");
         setScannedStudent(null);
         setScanStatus("error");
+        vibrate([200, 100, 200]); // Double vibration for error
         return;
       }
 
@@ -123,6 +131,7 @@ export function AttendanceClient() {
         setNotFoundAdmission(trimmed);
         setScannedStudent(null);
         setScanStatus("error");
+        vibrate([200, 100, 200]); // Double vibration for error
         return;
       }
 
@@ -141,17 +150,20 @@ export function AttendanceClient() {
       if (!result.success) {
         setError(result.error || "Failed to mark attendance");
         setScanStatus("error");
+        vibrate([200, 100, 200]); // Double vibration for error
         return;
       }
 
       setSuccess(`Attendance marked for ${student.fullName}`);
       setScanStatus("success");
+      vibrate(200); // Single vibration for success
     } catch (err: any) {
       // Catch any unexpected errors
       const errorMessage = err?.message || err?.toString() || "Failed to mark attendance";
       console.error("Attendance marking error:", err);
       setError(errorMessage);
       setScanStatus("error");
+      vibrate([200, 100, 200]); // Double vibration for error
     } finally {
       setLoading(false);
     }
@@ -159,54 +171,7 @@ export function AttendanceClient() {
 
   return (
     <div className="space-y-6">
-      {/* Mode Selection Card - Commented out for chapel-only mode
-      <Card className="luxury-card border-0">
-        <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase">Select Attendance Mode</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Button
-              variant={mode === "CLASS" ? "default" : "outline"}
-              onClick={() => {
-                setMode("CLASS");
-                setSelectedSession("");
-                setSelectedClass("");
-                setAttendances([]);
-              }}
-              className="h-24 sm:h-28 transition-all hover:scale-[1.02]"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <Users className="h-8 w-8" />
-                <div>
-                  <div className="font-medium text-base">CLASS</div>
-                  <div className="text-xs text-muted-foreground mt-1">Mark class attendance</div>
-                </div>
-              </div>
-            </Button>
-            <Button
-              variant={mode === "CHAPEL" ? "default" : "outline"}
-              onClick={() => {
-                setMode("CHAPEL");
-                setSelectedSession("");
-                setSelectedClass("");
-                setAttendances([]);
-              }}
-              className="h-24 sm:h-28 transition-all hover:scale-[1.02]"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <Church className="h-8 w-8" />
-                <div>
-                  <div className="font-medium text-base">CHAPEL</div>
-                  <div className="text-xs text-muted-foreground mt-1">Mark chapel attendance</div>
-                </div>
-              </div>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      */}
-
+      {/* Session Status Display */}
       <Card className="luxury-card border-0">
         <CardHeader className="pb-4 sm:pb-6">
           <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-3">
@@ -215,9 +180,8 @@ export function AttendanceClient() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Session Status Display - Auto-detected based on current date/time */}
           {sessionError ? (
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded flex items-center gap-3 mb-6">
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded flex items-center gap-3">
               <AlertCircle className="h-5 w-5 shrink-0" />
               <div>
                 <div className="font-medium">No Active Session</div>
@@ -225,7 +189,7 @@ export function AttendanceClient() {
               </div>
             </div>
           ) : currentSession && (
-            <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 rounded flex items-center gap-3 mb-6">
+            <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 rounded flex items-center gap-3">
               <CheckCircle className="h-5 w-5 shrink-0" />
               <div>
                 <div className="font-medium">Active Session</div>
@@ -235,12 +199,6 @@ export function AttendanceClient() {
               </div>
             </div>
           )}
-
-          <MultiScanner
-            onScan={handleScan}
-            disabled={loading || !currentSession}
-            placeholder="Scan barcode, scan QR code, or type admission number to mark attendance..."
-          />
         </CardContent>
       </Card>
 
@@ -257,6 +215,23 @@ export function AttendanceClient() {
           </CardContent>
         </Card>
       )}
+
+      {/* Scanner Card */}
+      <Card className="luxury-card border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-2">
+            <Church className="h-5 w-5" />
+            Scan Student
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MultiScanner
+            onScan={handleScan}
+            disabled={loading || !currentSession}
+            placeholder="Scan barcode, scan QR code, or type admission number to mark attendance..."
+          />
+        </CardContent>
+      </Card>
 
       {/* Scanned Student Display - Auto-updates on each scan, no close needed */}
       {scannedStudent && (

@@ -33,6 +33,13 @@ export function SecurityClient() {
   const [loading, setLoading] = useState(false);
   const [lastScanned, setLastScanned] = useState("");
 
+  // Vibration feedback helper
+  const vibrate = (pattern: number | number[]) => {
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  };
+
   const handleScan = useCallback(async (value: string) => {
     if (!value || value === lastScanned) return;
 
@@ -51,6 +58,13 @@ export function SecurityClient() {
         setStudentData(null);
       }
 
+      // Vibration feedback based on result
+      if (result.status === "checked_in" || result.status === "already_checked_in") {
+        vibrate(200); // Single vibration for success
+      } else {
+        vibrate([200, 100, 200]); // Double vibration for error
+      }
+
       // Clear last scanned after a short delay to allow re-scanning same student
       setTimeout(() => setLastScanned(""), 2000);
     } catch (err: any) {
@@ -60,6 +74,7 @@ export function SecurityClient() {
         message: err.message || "Failed to process check-in",
       });
       setStudentData(null);
+      vibrate([200, 100, 200]); // Double vibration for error
     } finally {
       setLoading(false);
     }
@@ -67,30 +82,6 @@ export function SecurityClient() {
 
   return (
     <div className="space-y-6">
-      {/* Scanner Card */}
-      <Card className="luxury-card border-0">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Gate Check-In
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MultiScanner
-            onScan={handleScan}
-            disabled={loading}
-            placeholder="Scan barcode, tap NFC, or type admission number to check in..."
-          />
-
-          {loading && (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground py-4 mt-4">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Processing check-in...</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Status Banner - Top of Results */}
       {scanResult && scanResult.student && (
         <Card className={`border-2 transition-all duration-300 ${
@@ -172,6 +163,30 @@ export function SecurityClient() {
           </CardContent>
         </Card>
       )}
+
+      {/* Scanner Card */}
+      <Card className="luxury-card border-0">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-2">
+            <UserCheck className="h-5 w-5" />
+            Gate Check-In
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MultiScanner
+            onScan={handleScan}
+            disabled={loading}
+            placeholder="Scan barcode, tap NFC, or type admission number to check in..."
+          />
+
+          {loading && (
+            <div className="flex items-center justify-center gap-2 text-muted-foreground py-4 mt-4">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Processing check-in...</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Student Details and Attendance - Matching Cashier Layout */}
       {studentData && scanResult && scanResult.student && (

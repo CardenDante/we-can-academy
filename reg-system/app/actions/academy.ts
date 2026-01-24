@@ -387,27 +387,61 @@ export async function assignClassToSession(sessionId: string, classId: string) {
     throw new Error("Only administrators can assign classes to sessions.");
   }
 
-  // Check if already assigned
-  const existing = await prisma.sessionClass.findFirst({
-    where: { sessionId, classId },
+  // Get the selected session to find its template
+  const selectedSession = await prisma.session.findUnique({
+    where: { id: sessionId },
   });
 
-  if (existing) {
-    throw new Error("This class is already assigned to this session.");
+  if (!selectedSession) {
+    throw new Error("Session not found.");
+  }
+
+  // Find ALL sessions with the same template (same name, day, type, times)
+  const allTemplateSessions = await prisma.session.findMany({
+    where: {
+      name: selectedSession.name,
+      day: selectedSession.day,
+      sessionType: selectedSession.sessionType,
+      startTime: selectedSession.startTime,
+      endTime: selectedSession.endTime,
+    },
+  });
+
+  // Get existing assignments to avoid duplicates
+  const existingAssignments = await prisma.sessionClass.findMany({
+    where: {
+      sessionId: {
+        in: allTemplateSessions.map(s => s.id),
+      },
+      classId,
+    },
+  });
+
+  const existingSessionIds = new Set(existingAssignments.map(a => a.sessionId));
+
+  // Create assignments for sessions that aren't already assigned
+  const sessionsToAssign = allTemplateSessions.filter(s => !existingSessionIds.has(s.id));
+
+  if (sessionsToAssign.length === 0) {
+    throw new Error("This class is already assigned to all sessions in this template.");
   }
 
   try {
-    const sessionClass = await prisma.sessionClass.create({
-      data: { sessionId, classId },
+    await prisma.sessionClass.createMany({
+      data: sessionsToAssign.map(session => ({
+        sessionId: session.id,
+        classId,
+      })),
     });
 
     revalidatePath("/admin/sessions");
-    return sessionClass;
+    revalidatePath("/admin/class-sessions");
+    return { count: sessionsToAssign.length };
   } catch (error: any) {
     if (error.code === "P2002") {
-      throw new Error("This class is already assigned to this session.");
+      throw new Error("Some sessions are already assigned to this class.");
     }
-    throw new Error("Failed to assign class to session. Please try again.");
+    throw new Error("Failed to assign class to sessions. Please try again.");
   }
 }
 
@@ -418,11 +452,38 @@ export async function removeClassFromSession(sessionId: string, classId: string)
   }
 
   try {
+    // Get the selected session to find its template
+    const selectedSession = await prisma.session.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!selectedSession) {
+      throw new Error("Session not found.");
+    }
+
+    // Find ALL sessions with the same template
+    const allTemplateSessions = await prisma.session.findMany({
+      where: {
+        name: selectedSession.name,
+        day: selectedSession.day,
+        sessionType: selectedSession.sessionType,
+        startTime: selectedSession.startTime,
+        endTime: selectedSession.endTime,
+      },
+    });
+
+    // Remove class assignment from all sessions in this template
     await prisma.sessionClass.deleteMany({
-      where: { sessionId, classId },
+      where: {
+        sessionId: {
+          in: allTemplateSessions.map(s => s.id),
+        },
+        classId,
+      },
     });
 
     revalidatePath("/admin/sessions");
+    revalidatePath("/admin/class-sessions");
   } catch (error: any) {
     throw new Error("Failed to remove class from session. Please try again.");
   }

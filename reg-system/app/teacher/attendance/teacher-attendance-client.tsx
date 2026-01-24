@@ -105,6 +105,13 @@ export function TeacherAttendanceClient({
     }
   }
 
+  // Vibration feedback helper
+  const vibrate = (pattern: number | number[]) => {
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  };
+
   const handleScan = useCallback(async (value: string) => {
     if (!value || value === lastScanned) return;
 
@@ -114,6 +121,7 @@ export function TeacherAttendanceClient({
         message: "No active session - cannot mark attendance outside session time",
       });
       setStudentData(null);
+      vibrate([200, 100, 200]); // Double vibration for error
       return;
     }
 
@@ -131,6 +139,7 @@ export function TeacherAttendanceClient({
         });
         setStudentData(null);
         setLoading(false);
+        vibrate([200, 100, 200]); // Double vibration for error
         setTimeout(() => setLastScanned(""), 2000);
         return;
       }
@@ -145,6 +154,7 @@ export function TeacherAttendanceClient({
           student,
         });
         setLoading(false);
+        vibrate([200, 100, 200]); // Double vibration for error
         setTimeout(() => setLastScanned(""), 2000);
         return;
       }
@@ -162,6 +172,7 @@ export function TeacherAttendanceClient({
           message: `Attendance marked for ${student.fullName}`,
           student,
         });
+        vibrate(200); // Single vibration for success
         await loadAttendanceCount(currentSession.id);
       } else {
         setScanResult({
@@ -169,6 +180,7 @@ export function TeacherAttendanceClient({
           message: result.error || "Failed to mark attendance",
           student,
         });
+        vibrate([200, 100, 200]); // Double vibration for error
       }
 
       // Clear last scanned after a short delay to allow re-scanning same student
@@ -181,6 +193,7 @@ export function TeacherAttendanceClient({
         message: errorMessage,
       });
       setStudentData(null);
+      vibrate([200, 100, 200]); // Double vibration for error
     } finally {
       setLoading(false);
     }
@@ -236,32 +249,6 @@ export function TeacherAttendanceClient({
         </CardContent>
       </Card>
 
-      {/* Scanner Card */}
-      {currentSession && (
-        <Card className="luxury-card border-0">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              Mark Class Attendance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MultiScanner
-              onScan={handleScan}
-              disabled={loading}
-              placeholder="Scan barcode, tap NFC, or type admission number..."
-            />
-
-            {loading && (
-              <div className="flex items-center justify-center gap-2 text-muted-foreground py-4 mt-4">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Processing attendance...</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Status Banner - Matching Security Design */}
       {scanResult && scanResult.student && (
         <Card className={`border-2 transition-all duration-300 ${
@@ -295,6 +282,32 @@ export function TeacherAttendanceClient({
               <XCircle className="h-8 w-8 text-destructive" />
               <span className="text-xl font-bold text-destructive uppercase tracking-wide">{scanResult.message}</span>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Scanner Card */}
+      {currentSession && (
+        <Card className="luxury-card border-0">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Mark Class Attendance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MultiScanner
+              onScan={handleScan}
+              disabled={loading}
+              placeholder="Scan barcode, tap NFC, or type admission number..."
+            />
+
+            {loading && (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground py-4 mt-4">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Processing attendance...</span>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

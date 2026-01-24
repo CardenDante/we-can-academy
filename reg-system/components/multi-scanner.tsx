@@ -53,6 +53,7 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
   const [qrError, setQrError] = useState("");
   const [scanMode, setScanMode] = useState<"keyboard" | "nfc" | "qr">("keyboard");
   const [lastScanTime, setLastScanTime] = useState(0);
+  const [manualEntryMode, setManualEntryMode] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const nfcReaderRef = useRef<NDEFReader | null>(null);
   const pollingRef = useRef<boolean>(false);
@@ -64,6 +65,13 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
   const keyTimestamps = useRef<number[]>([]);
   const BARCODE_SPEED_THRESHOLD = 50; // ms between keystrokes for barcode scanner
   const BARCODE_MIN_LENGTH = 3; // minimum characters for valid scan
+
+  // Vibration feedback helper
+  const vibrate = (pattern: number | number[]) => {
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  };
 
   // Check what NFC readers are available
   useEffect(() => {
@@ -566,6 +574,7 @@ export function MultiScanner({ onScan, disabled = false, placeholder = "Scan or 
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
+          inputMode="none"
         />
         {nfcActive && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
