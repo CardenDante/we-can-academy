@@ -141,7 +141,7 @@ async function getDatabaseContext(question: string): Promise<string> {
       });
 
       const coursesWithCounts = await Promise.all(
-        studentsByCourse.map(async (item) => {
+        studentsByCourse.map(async (item: any) => {
           const course = await prisma.course.findUnique({
             where: { id: item.courseId },
           });
@@ -153,7 +153,7 @@ async function getDatabaseContext(question: string): Promise<string> {
       );
 
       context.push(`**Students by Course:**`);
-      coursesWithCounts.forEach((item) => {
+      coursesWithCounts.forEach((item: { course: string; count: number }) => {
         context.push(`- ${item.course}: ${item.count} students`);
       });
       context.push("");
@@ -166,19 +166,10 @@ async function getDatabaseContext(question: string): Promise<string> {
       lowerQuestion.includes("absent")
     ) {
       const totalAttendance = await prisma.attendance.count();
-      const presentCount = await prisma.attendance.count({
-        where: { isPresent: true },
-      });
-      const absentCount = totalAttendance - presentCount;
 
       context.push(`**Attendance Statistics:**`);
       context.push(`- Total attendance records: ${totalAttendance}`);
-      context.push(`- Present: ${presentCount}`);
-      context.push(`- Absent: ${absentCount}`);
-      if (totalAttendance > 0) {
-        const presentRate = ((presentCount / totalAttendance) * 100).toFixed(1);
-        context.push(`- Attendance rate: ${presentRate}%`);
-      }
+      context.push(`- Note: Attendance records indicate students who were present at sessions`);
       context.push("");
 
       // Recent attendance
@@ -193,9 +184,9 @@ async function getDatabaseContext(question: string): Promise<string> {
 
       if (recentAttendance.length > 0) {
         context.push(`**Recent Attendance:**`);
-        recentAttendance.forEach((att) => {
+        recentAttendance.forEach((att: any) => {
           context.push(
-            `- ${att.student.fullName} - ${att.session.name} (${att.isPresent ? "Present" : "Absent"})`
+            `- ${att.student.fullName} - ${att.session.name} (Present)`
           );
         });
         context.push("");
@@ -220,7 +211,7 @@ async function getDatabaseContext(question: string): Promise<string> {
 
       if (recentCheckIns.length > 0) {
         context.push(`**Recent Check-ins:**`);
-        recentCheckIns.forEach((check) => {
+        recentCheckIns.forEach((check: any) => {
           context.push(
             `- ${check.student.fullName} - ${check.weekend.name} (${check.day})`
           );
@@ -239,7 +230,7 @@ async function getDatabaseContext(question: string): Promise<string> {
       });
 
       context.push(`**Teachers:**`);
-      teachers.forEach((teacher) => {
+      teachers.forEach((teacher: any) => {
         context.push(
           `- ${teacher.name}: ${teacher.course.name} - ${teacher.class.name}`
         );
@@ -260,7 +251,7 @@ async function getDatabaseContext(question: string): Promise<string> {
       });
 
       context.push(`**Courses:**`);
-      courses.forEach((course) => {
+      courses.forEach((course: any) => {
         context.push(
           `- ${course.name} (${course.code}): ${course._count.students} students`
         );
@@ -279,7 +270,7 @@ async function getDatabaseContext(question: string): Promise<string> {
       });
 
       context.push(`**Recent Sessions:**`);
-      sessions.forEach((session) => {
+      sessions.forEach((session: any) => {
         context.push(
           `- ${session.name} (${session.sessionType}) - ${session.weekend?.name || "No weekend"}`
         );
