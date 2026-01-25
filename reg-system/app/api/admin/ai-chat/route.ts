@@ -224,15 +224,19 @@ async function getDatabaseContext(question: string): Promise<string> {
     if (lowerQuestion.includes("teacher") || lowerQuestion.includes("staff")) {
       const teachers = await prisma.teacher.findMany({
         include: {
-          course: true,
-          class: true,
+          user: true,
+          class: {
+            include: {
+              course: true,
+            },
+          },
         },
       });
 
       context.push(`**Teachers:**`);
       teachers.forEach((teacher: any) => {
         context.push(
-          `- ${teacher.name}: ${teacher.course.name} - ${teacher.class.name}`
+          `- ${teacher.user.name}: ${teacher.class.course.name} - ${teacher.class.name}`
         );
       });
       context.push("");
@@ -253,7 +257,7 @@ async function getDatabaseContext(question: string): Promise<string> {
       context.push(`**Courses:**`);
       courses.forEach((course: any) => {
         context.push(
-          `- ${course.name} (${course.code}): ${course._count.students} students`
+          `- ${course.name}: ${course._count.students} students`
         );
       });
       context.push("");
