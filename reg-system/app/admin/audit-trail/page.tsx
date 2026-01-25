@@ -1,7 +1,7 @@
 import { getUser } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { prisma } from "@/lib/prisma";
-import { ArrowLeft, CheckCircle, UserPlus, Users, Calendar } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { AuditTrailList } from "@/components/audit-trail-list";
 
@@ -58,10 +58,10 @@ export default async function AuditTrailPage() {
   const activities: Array<{
     id: string;
     type: "attendance" | "checkin" | "user" | "student";
-    timestamp: Date;
+    timestamp: string;
     description: string;
     actor?: string;
-    icon: typeof CheckCircle;
+    iconName: string;
     color: string;
   }> = [];
 
@@ -70,10 +70,10 @@ export default async function AuditTrailPage() {
     activities.push({
       id: att.id,
       type: "attendance",
-      timestamp: att.markedAt,
+      timestamp: att.markedAt.toISOString(),
       description: `${att.student.fullName} marked present for ${att.session.name}`,
       actor: att.markedBy,
-      icon: CheckCircle,
+      iconName: "CheckCircle",
       color: "text-green-500",
     });
   });
@@ -83,10 +83,10 @@ export default async function AuditTrailPage() {
     activities.push({
       id: check.id,
       type: "checkin",
-      timestamp: check.checkedAt,
+      timestamp: check.checkedAt.toISOString(),
       description: `${check.student.fullName} checked in for ${check.weekend.name} (${check.day})`,
       actor: check.checkedBy,
-      icon: Calendar,
+      iconName: "Calendar",
       color: "text-blue-500",
     });
   });
@@ -96,9 +96,9 @@ export default async function AuditTrailPage() {
     activities.push({
       id: u.id,
       type: "user",
-      timestamp: u.createdAt,
+      timestamp: u.createdAt.toISOString(),
       description: `New ${u.role} user created: ${u.name} (@${u.username})`,
-      icon: UserPlus,
+      iconName: "UserPlus",
       color: "text-purple-500",
     });
   });
@@ -108,15 +108,15 @@ export default async function AuditTrailPage() {
     activities.push({
       id: s.id,
       type: "student",
-      timestamp: s.createdAt,
+      timestamp: s.createdAt.toISOString(),
       description: `New student registered: ${s.fullName} (${s.admissionNumber}) - ${s.course.name}`,
-      icon: Users,
+      iconName: "Users",
       color: "text-orange-500",
     });
   });
 
   // Sort all activities by timestamp
-  activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
     <div className="min-h-screen bg-background">

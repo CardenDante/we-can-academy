@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle, UserPlus, Users, Calendar, Settings, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, UserPlus, Users, Calendar, Settings, Search, ChevronLeft, ChevronRight, LucideIcon } from "lucide-react";
 
 interface Activity {
   id: string;
   type: "attendance" | "checkin" | "user" | "student";
-  timestamp: Date;
+  timestamp: string;
   description: string;
   actor?: string;
-  icon: typeof CheckCircle;
+  iconName: string;
   color: string;
 }
 
@@ -22,6 +22,14 @@ interface AuditTrailListProps {
 }
 
 const ITEMS_PER_PAGE = 20;
+
+// Map icon names to icon components
+const iconMap: Record<string, LucideIcon> = {
+  CheckCircle,
+  UserPlus,
+  Users,
+  Calendar,
+};
 
 export function AuditTrailList({ activities }: AuditTrailListProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +88,7 @@ export function AuditTrailList({ activities }: AuditTrailListProps) {
       <CardContent>
         <div className="space-y-4">
           {currentActivities.map((activity) => {
-            const Icon = activity.icon;
+            const Icon = iconMap[activity.iconName] || CheckCircle;
             return (
               <div
                 key={activity.id}

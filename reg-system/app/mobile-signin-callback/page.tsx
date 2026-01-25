@@ -18,16 +18,23 @@ export default async function MobileSigninCallbackPage({
     redirect("/mobile-signin?error=no_code");
   }
 
+  // Get and verify the one-time code from Redis
+  let data;
   try {
-    // Get and verify the one-time code from Redis
-    const data = await consumeAuthCode(code);
+    data = await consumeAuthCode(code);
+  } catch (error) {
+    console.error("Redis error:", error);
+    redirect("/mobile-signin?error=server_error");
+  }
 
-    if (!data) {
-      redirect("/mobile-signin?error=invalid_code");
-    }
+  if (!data) {
+    redirect("/mobile-signin?error=invalid_code");
+  }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
+  // Get user from database
+  let user;
+  try {
+    user = await prisma.user.findUnique({
       where: { id: data.userId },
       select: {
         id: true,
@@ -36,26 +43,37 @@ export default async function MobileSigninCallbackPage({
         role: true,
       },
     });
+  } catch (error) {
+    console.error("Database error:", error);
+    redirect("/mobile-signin?error=server_error");
+  }
 
-    if (!user) {
-      redirect("/mobile-signin?error=user_not_found");
-    }
+  if (!user) {
+    redirect("/mobile-signin?error=user_not_found");
+  }
 
-    // Create NextAuth-compatible session token
-    const sessionToken = {
-      sub: user.id,
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      role: user.role,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days
-    };
+  // Create NextAuth-compatible session token
+  const sessionToken = {
+    sub: user.id,
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    role: user.role,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days
+  };
 
-    // Sign the token
-    const signedToken = sign(sessionToken, JWT_SECRET);
+  // Sign the token
+  let signedToken;
+  try {
+    signedToken = sign(sessionToken, JWT_SECRET);
+  } catch (error) {
+    console.error("JWT signing error:", error);
+    redirect("/mobile-signin?error=server_error");
+  }
 
-    // Set the session cookie
+  // Set the session cookie
+  try {
     const cookieStore = await cookies();
     const isSecure = process.env.NODE_ENV === "production";
     const cookieName = isSecure
@@ -69,11 +87,11 @@ export default async function MobileSigninCallbackPage({
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
     });
-
-    // Redirect to the intended page
-    redirect(data.redirect || "/");
   } catch (error) {
-    console.error("Mobile signin callback error:", error);
+    console.error("Cookie setting error:", error);
     redirect("/mobile-signin?error=server_error");
   }
+
+  // Redirect to the intended page
+  redirect(data.redirect || "/");
 }
