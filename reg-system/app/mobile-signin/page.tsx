@@ -20,9 +20,11 @@ export default async function MobileSignInPage({
   if (error === "no_code") {
     errorMessage = "No authentication code provided";
   } else if (error === "invalid_code") {
-    errorMessage = "Invalid or expired code";
+    errorMessage = "Invalid or expired code. Please try again from the mobile app.";
   } else if (error === "user_not_found") {
-    errorMessage = "User not found";
+    errorMessage = "User not found. Please contact support.";
+  } else if (error === "server_error") {
+    errorMessage = "Server error occurred. Please try again.";
   } else if (!error) {
     errorMessage = "No authentication code provided";
   }
