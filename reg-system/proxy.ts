@@ -19,7 +19,7 @@ export default auth(async function middleware(request: NextRequest) {
   }
 
   // Public routes
-  if (pathname === "/login" || pathname === "/unauthorized") {
+  if (pathname === "/login" || pathname === "/unauthorized" || pathname === "/mobile-signin" || pathname === "/mobile-auth-signin") {
     const session = (request as any).auth;
 
     // If logged in and trying to access login, redirect to role home
@@ -35,7 +35,15 @@ export default auth(async function middleware(request: NextRequest) {
   // Protected routes - require authentication
   const session = (request as any).auth;
 
+  console.log("[Proxy] Protected route check:", {
+    path: pathname,
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    cookies: request.cookies.getAll().map(c => c.name),
+  });
+
   if (!session?.user) {
+    console.log("[Proxy] No session found, redirecting to login");
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
