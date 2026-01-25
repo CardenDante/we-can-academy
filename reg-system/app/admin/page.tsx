@@ -2,7 +2,7 @@ import { getUser } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { Card, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
-import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight, TrendingUp, UserCheck, FolderKanban, Church, School } from "lucide-react";
+import { Users, GraduationCap, BookOpen, Calendar, ClipboardList, Settings, ArrowRight, TrendingUp, UserCheck, FolderKanban, Church, School, ScrollText, MessageSquare } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
@@ -187,6 +187,32 @@ export default async function AdminPage() {
               </Card>
             );
           })}
+        </div>
+
+        {/* Audit Trail Button */}
+        <div className="mb-8">
+          <Link href="/admin/audit-trail">
+            <Card className="luxury-card border-0 overflow-hidden hover:border-primary/20 transition-all duration-300 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
+              <CardHeader className="pb-4 pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                      <ScrollText className="h-6 w-6 text-yellow-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium tracking-tight mb-1">
+                        System Audit Trail
+                      </h3>
+                      <p className="text-sm text-muted-foreground font-light">
+                        View all system activity, logs, and recent changes
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

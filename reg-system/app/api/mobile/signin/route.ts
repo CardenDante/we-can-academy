@@ -13,9 +13,12 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
 
+  // Use NEXTAUTH_URL as the base URL for all redirects
+  const baseUrl = process.env.NEXTAUTH_URL || request.url;
+
   if (!code) {
     // Redirect to error page
-    return NextResponse.redirect(new URL("/mobile-signin?error=no_code", request.url));
+    return NextResponse.redirect(new URL("/mobile-signin?error=no_code", baseUrl));
   }
 
   // Get and verify the one-time code from Redis
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   if (!data) {
     // Redirect to error page
-    return NextResponse.redirect(new URL("/mobile-signin?error=invalid_code", request.url));
+    return NextResponse.redirect(new URL("/mobile-signin?error=invalid_code", baseUrl));
   }
 
   // Get user from database
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest) {
 
   if (!user) {
     // Redirect to error page
-    return NextResponse.redirect(new URL("/mobile-signin?error=user_not_found", request.url));
+    return NextResponse.redirect(new URL("/mobile-signin?error=user_not_found", baseUrl));
   }
 
   // Create NextAuth session token
@@ -62,7 +65,7 @@ export async function GET(request: NextRequest) {
     ? "__Secure-next-auth.session-token"
     : "next-auth.session-token";
 
-  const response = NextResponse.redirect(new URL(data.redirect || "/", request.url));
+  const response = NextResponse.redirect(new URL(data.redirect || "/", baseUrl));
 
   response.cookies.set(cookieName, signedToken, {
     httpOnly: true,
