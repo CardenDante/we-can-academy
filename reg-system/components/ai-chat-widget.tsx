@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Loader2 } from "lucide-react";
+import { Sparkles, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -100,10 +100,10 @@ export function AIChatWidget() {
           <CardHeader className="pb-3 pt-4 border-b flex flex-row items-center justify-between space-y-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                <MessageSquare className="h-4 w-4 text-white" />
+                <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
-                <CardTitle className="text-base">AI Database Assistant</CardTitle>
+                <CardTitle className="text-base">Wecan ChatBot</CardTitle>
                 <p className="text-xs text-muted-foreground">
                   Ask me anything about your data
                 </p>
@@ -125,10 +125,10 @@ export function AIChatWidget() {
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-4">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mb-4">
-                    <MessageSquare className="h-8 w-8 text-purple-500" />
+                    <Sparkles className="h-8 w-8 text-purple-500" />
                   </div>
                   <h3 className="font-medium mb-2">
-                    Hi! I'm your AI assistant
+                    Hi! I'm Wecan ChatBot
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     I can help you analyze data about students, courses,
@@ -223,7 +223,7 @@ export function AIChatWidget() {
         {isOpen ? (
           <X className="h-6 w-6 text-white" />
         ) : (
-          <MessageSquare className="h-6 w-6 text-white" />
+          <Sparkles className="h-6 w-6 text-white" />
         )}
       </Button>
     </>
