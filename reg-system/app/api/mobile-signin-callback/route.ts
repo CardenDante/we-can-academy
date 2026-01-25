@@ -1,24 +1,20 @@
-import { redirect } from "next/navigation";
+import { NextRequest, NextResponse } from "next/server";
 import { consumeAuthCode } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
 import { sign } from "jsonwebtoken";
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
 
-export default async function MobileSigninCallbackPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ code?: string }>;
-}) {
-  const params = await searchParams;
-  const { code } = params;
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const code = searchParams.get("code");
+  const baseUrl = process.env.NEXTAUTH_URL || request.url;
 
   console.log("[Mobile Signin] Callback started with code:", code?.substring(0, 10) + "...");
 
   if (!code) {
     console.log("[Mobile Signin] No code provided, redirecting to error");
-    redirect("/mobile-signin?error=no_code");
+    return NextResponse.redirect(new URL("/mobile-signin?error=no_code", baseUrl));
   }
 
   // Get and verify the one-time code from Redis
@@ -32,12 +28,12 @@ export default async function MobileSigninCallbackPage({
     });
   } catch (error) {
     console.error("[Mobile Signin] Redis error:", error);
-    redirect("/mobile-signin?error=server_error");
+    return NextResponse.redirect(new URL("/mobile-signin?error=server_error", baseUrl));
   }
 
   if (!data) {
     console.log("[Mobile Signin] Invalid or expired code");
-    redirect("/mobile-signin?error=invalid_code");
+    return NextResponse.redirect(new URL("/mobile-signin?error=invalid_code", baseUrl));
   }
 
   // Get user from database
@@ -60,12 +56,12 @@ export default async function MobileSigninCallbackPage({
     });
   } catch (error) {
     console.error("[Mobile Signin] Database error:", error);
-    redirect("/mobile-signin?error=server_error");
+    return NextResponse.redirect(new URL("/mobile-signin?error=server_error", baseUrl));
   }
 
   if (!user) {
     console.log("[Mobile Signin] User not found in database");
-    redirect("/mobile-signin?error=user_not_found");
+    return NextResponse.redirect(new URL("/mobile-signin?error=user_not_found", baseUrl));
   }
 
   // Create NextAuth-compatible session token
@@ -88,38 +84,34 @@ export default async function MobileSigninCallbackPage({
     console.log("[Mobile Signin] JWT token signed successfully");
   } catch (error) {
     console.error("[Mobile Signin] JWT signing error:", error);
-    redirect("/mobile-signin?error=server_error");
+    return NextResponse.redirect(new URL("/mobile-signin?error=server_error", baseUrl));
   }
+
+  // Create redirect response
+  const redirectUrl = data.redirect || "/";
+  console.log("[Mobile Signin] Creating redirect response to:", redirectUrl);
+  const response = NextResponse.redirect(new URL(redirectUrl, baseUrl));
 
   // Set the session cookie
-  try {
-    const cookieStore = await cookies();
-    const isSecure = process.env.NODE_ENV === "production";
-    const cookieName = isSecure
-      ? "__Secure-next-auth.session-token"
-      : "next-auth.session-token";
+  const isSecure = process.env.NODE_ENV === "production";
+  const cookieName = isSecure
+    ? "__Secure-next-auth.session-token"
+    : "next-auth.session-token";
 
-    console.log("[Mobile Signin] Setting cookie:", {
-      name: cookieName,
-      isSecure,
-      env: process.env.NODE_ENV,
-    });
+  console.log("[Mobile Signin] Setting cookie:", {
+    name: cookieName,
+    isSecure,
+    env: process.env.NODE_ENV,
+  });
 
-    cookieStore.set(cookieName, signedToken, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-    });
-    console.log("[Mobile Signin] Cookie set successfully");
-  } catch (error) {
-    console.error("[Mobile Signin] Cookie setting error:", error);
-    redirect("/mobile-signin?error=server_error");
-  }
+  response.cookies.set(cookieName, signedToken, {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  });
 
-  // Redirect to the intended page
-  const redirectUrl = data.redirect || "/";
-  console.log("[Mobile Signin] Redirecting to:", redirectUrl);
-  redirect(redirectUrl);
+  console.log("[Mobile Signin] Cookie set successfully, redirecting");
+  return response;
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Handle mobile sign-in with one-time code
- * Redirects to callback page which will set the session cookie
+ * Redirects to callback API route which will set the session cookie
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -16,6 +16,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/mobile-signin?error=no_code", baseUrl));
   }
 
-  // Redirect to callback page which will handle authentication
-  return NextResponse.redirect(new URL(`/mobile-signin-callback?code=${code}`, baseUrl));
+  // Redirect to callback API route which will handle authentication
+  return NextResponse.redirect(new URL(`/api/mobile-signin-callback?code=${code}`, baseUrl));
 }
