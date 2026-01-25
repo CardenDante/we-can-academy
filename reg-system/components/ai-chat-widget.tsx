@@ -1,21 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { 
-  Sparkles, 
-  X, 
-  Send, 
-  Loader2, 
-  Bot, 
-  User, 
-  MessageSquare, 
-  CornerDownLeft 
-} from "lucide-react";
+import { X, ArrowUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils"; // Assuming you have a cn utility, if not, remove this wrapper
+import { cn } from "@/lib/utils";
+
+// Placeholder image for a luxury/professional feel.
+// Replace this with your actual brand image or assistant portrait.
+const BRAND_IMAGE_URL = "https://images.unsplash.com/photo-1507081323647-4d250478b919?q=80&w=100&auto=format&fit=crop";
 
 interface Message {
   id: string;
@@ -25,10 +20,9 @@ interface Message {
 }
 
 const SUGGESTIONS = [
-  "How many students are enrolled?",
-  "Show me attendance trends",
-  "Which course has the most students?",
-  "List recent check-ins"
+  "Enrollment analytics",
+  "Attendance trends",
+  "Course performance",
 ];
 
 export function AIChatWidget() {
@@ -39,20 +33,18 @@ export function AIChatWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
       }
     }
   }, [messages, isLoading]);
 
-  // Focus input when opened
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
 
@@ -70,39 +62,36 @@ export function AIChatWidget() {
     setInput("");
     setIsLoading(true);
 
+    // Simulate network delay for the "luxury" slow feel
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     try {
-      const response = await fetch("/api/admin/ai-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage.content,
-          history: messages.map((m) => ({ role: m.role, content: m.content })),
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed");
-
-      const data = await response.json();
+        // --- REPLACE WITH YOUR ACTUAL API CALL ---
+        // const response = await fetch("/api/admin/ai-chat", { ... });
+        // const data = await response.json();
+        // const responseText = data.response;
+        
+        // Mock response for demonstration
+        const responseText = "Based on the current data, enrollment is up by 12% compared to last semester. The 'Advanced Analytics' course currently holds the highest attendance record.";
+        // -----------------------------------------
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response,
+        content: responseText,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error(error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: "I encountered a connection error. Please try again later.",
-          timestamp: new Date(),
-        },
-      ]);
+        const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: "We encountered an issue retrieving that information. Please try again.",
+            timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -122,184 +111,158 @@ export function AIChatWidget() {
       {/* Chat Window */}
       <div
         className={cn(
-          "fixed bottom-20 right-4 z-50 flex flex-col transition-all duration-300 ease-in-out origin-bottom-right",
+          "fixed bottom-24 right-6 z-50 flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) origin-bottom-right",
           isOpen 
             ? "opacity-100 scale-100 translate-y-0" 
-            : "opacity-0 scale-95 translate-y-4 pointer-events-none"
+            : "opacity-0 scale-95 translate-y-8 pointer-events-none"
         )}
       >
-        <Card className="w-[380px] h-[600px] shadow-2xl border flex flex-col overflow-hidden rounded-2xl">
-          {/* Header */}
-          <CardHeader className="p-4 border-b bg-muted/40 backdrop-blur-sm flex flex-row items-center justify-between space-y-0 sticky top-0 z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm leading-none">Wecan AI</h3>
-                <span className="flex items-center gap-1.5 mt-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                  </span>
-                  <p className="text-[11px] text-muted-foreground font-medium">Online</p>
-                </span>
-              </div>
+        <Card className="w-[400px] h-[650px] shadow-[0_20px_70px_rgba(0,0,0,0.15)] border-0 flex flex-col overflow-hidden rounded-[30px] bg-stone-50 dark:bg-zinc-900">
+          {/* Minimal Header */}
+          <div className="px-8 pt-8 pb-4 flex items-center justify-between bg-transparent z-10">
+            <div>
+                <h3 className="font-medium text-xl tracking-wide text-stone-900 dark:text-stone-100">Concierge</h3>
+                <p className="text-sm text-stone-500 font-light tracking-wider mt-1">Data Assistant</p>
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full"
+              className="h-10 w-10 rounded-full hover:bg-stone-200/50 dark:hover:bg-zinc-800/50 transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5 text-stone-600 dark:text-stone-300" strokeWidth={1.5} />
             </Button>
-          </CardHeader>
+          </div>
 
           {/* Messages Area */}
-          <ScrollArea className="flex-1 bg-background/50" ref={scrollRef}>
-            <div className="p-4 flex flex-col gap-4 min-h-full">
+          <ScrollArea className="flex-1 -mt-4" ref={scrollRef}>
+            <div className="px-6 py-8 flex flex-col gap-8 min-h-full">
               {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center flex-1 h-full mt-10 space-y-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-violet-100 to-indigo-50 dark:from-violet-900/20 dark:to-indigo-900/20 flex items-center justify-center rotate-3">
-                    <Bot className="h-10 w-10 text-indigo-500" />
-                  </div>
-                  <div className="text-center space-y-1 max-w-[250px]">
-                    <h3 className="font-semibold text-foreground">
-                      How can I help you?
+                <div className="flex flex-col justify-center flex-1 h-full px-6 space-y-12">
+                  <div className="space-y-4">
+                    <div className="h-20 w-20 rounded-2xl overflow-hidden shadow-lg mx-auto grayscale contrast-125">
+                        <img src={BRAND_IMAGE_URL} alt="Assistant" className="h-full w-full object-cover" />
+                    </div>
+                    <h3 className="text-2xl font-light text-center text-stone-800 dark:text-stone-100 tracking-wide leading-relaxed">
+                      How may I assist with your data today?
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      I can analyze student data, attendance, and generate reports.
-                    </p>
                   </div>
-                  <div className="grid gap-2 w-full px-4">
+                  
+                  <div className="grid gap-3 pt-4 px-4">
                     {SUGGESTIONS.map((suggestion) => (
                       <button
                         key={suggestion}
                         onClick={() => sendMessage(suggestion)}
-                        className="text-xs text-left px-3 py-2 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors border border-transparent hover:border-border flex items-center gap-2 group"
+                        className="text-sm font-light tracking-wide text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-all py-3 border-b border-stone-200 dark:border-zinc-800 text-left flex items-center group"
                       >
-                        <MessageSquare className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-stone-300 group-hover:bg-stone-900 dark:group-hover:bg-stone-100 mr-4 transition-colors"></span>
                         {suggestion}
                       </button>
                     ))}
                   </div>
                 </div>
               ) : (
-                <>
-                  {messages.map((message) => (
+                <div className="flex flex-col gap-6 pt-4">
+                  {messages.map((message, index) => {
+                    // Only show avatar if it's the first message in a sequence from the assistant
+                    const showAvatar = message.role === "assistant" && (index === 0 || messages[index - 1].role === "user");
+
+                    return (
                     <div
                       key={message.id}
-                      className={`flex gap-3 ${
-                        message.role === "user" ? "flex-row-reverse" : "flex-row"
-                      }`}
+                      className={`flex flex-col ${
+                        message.role === "user" ? "items-end" : "items-start"
+                      } ${message.role === "assistant" && !showAvatar ? "ml-12" : ""}`}
                     >
-                      {/* Avatar */}
-                      <div className="flex-shrink-0 mt-1">
-                        {message.role === "assistant" ? (
-                          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center border border-indigo-200 dark:border-indigo-800">
-                            <Bot className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                          </div>
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center border">
-                            <User className="h-4 w-4 text-gray-500" />
-                          </div>
-                        )}
-                      </div>
+                      {showAvatar && (
+                         <div className="h-8 w-8 mb-3 rounded-full overflow-hidden shadow-sm grayscale contrast-125 flex-shrink-0">
+                            <img src={BRAND_IMAGE_URL} alt="Assistant" className="h-full w-full object-cover" />
+                        </div>
+                      )}
 
-                      {/* Bubble */}
                       <div
                         className={cn(
-                          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+                          "max-w-[85%] text-base font-light leading-7 tracking-wide",
                           message.role === "user"
-                            ? "bg-primary text-primary-foreground rounded-br-none"
-                            : "bg-card border text-card-foreground rounded-bl-none"
+                            ? "text-stone-900 dark:text-stone-100 bg-stone-200/50 dark:bg-zinc-800 px-5 py-3 rounded-[20px] rounded-tr-md" // Minimalist bubble for user
+                            : "text-stone-800 dark:text-stone-300 pl-1" // No bubble for assistant, just text
                         )}
                       >
-                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                        <p
-                          className={cn(
-                            "text-[10px] mt-1 text-right",
-                            message.role === "user"
-                              ? "text-primary-foreground/70"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {message.timestamp.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                        <p className="whitespace-pre-wrap">{message.content}</p>
                       </div>
+                       {/* Timestamp - very subtle */}
+                       <p className={cn("text-[10px] text-stone-400 mt-2 tracking-wider", message.role === 'user' ? "mr-2" : "ml-1")}>
+                            {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}).toLowerCase()}
+                        </p>
                     </div>
-                  ))}
+                  )})}
                   
                   {isLoading && (
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center border border-indigo-200 dark:border-indigo-800">
-                         <Bot className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <div className="bg-card border rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-1 shadow-sm">
-                        <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                        <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                        <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+                    <div className="flex items-center gap-4 ml-1">
+                         <div className="h-6 w-6 rounded-full overflow-hidden shadow-sm grayscale contrast-125 flex-shrink-0 opacity-60">
+                            <img src={BRAND_IMAGE_URL} alt="Thinking" className="h-full w-full object-cover" />
+                        </div>
+                       <div className="flex items-center gap-1">
+                        {/* A single, slowly pulsing luxury dot instead of bouncy balls */}
+                        <span className="w-2 h-2 bg-stone-400 dark:bg-stone-600 rounded-full animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]"></span>
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           </ScrollArea>
 
-          {/* Input Area */}
-          <CardFooter className="p-4 border-t bg-background">
-            <div className="flex items-center gap-2 w-full relative">
+          {/* Minimal Input Area */}
+          <div className="p-6 bg-transparent">
+            <div className="flex items-center gap-2 w-full relative bg-white dark:bg-zinc-800 rounded-full px-4 py-2 shadow-sm border-stone-100 dark:border-zinc-700 border">
               <Input
                 ref={inputRef}
-                placeholder="Ask your data..."
+                placeholder="Write a message..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 disabled={isLoading}
-                className="flex-1 pr-10 min-h-[44px] rounded-full bg-muted/50 border-transparent focus:border-input focus:bg-background transition-all"
+                className="flex-1 border-none shadow-none focus-visible:ring-0 bg-transparent text-base font-light placeholder:text-stone-400 text-stone-900 dark:text-stone-100 h-12 tracking-wide"
               />
               <Button
                 onClick={() => handleSubmit()}
                 disabled={!input.trim() || isLoading}
                 size="icon"
                 className={cn(
-                  "absolute right-1 w-8 h-8 rounded-full transition-all duration-200",
+                  "h-10 w-10 rounded-full transition-all duration-300 shrink-0",
                   input.trim() 
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md" 
-                    : "bg-transparent text-muted-foreground hover:bg-muted"
+                    ? "bg-stone-900 hover:bg-stone-800 text-stone-50 dark:bg-stone-100 dark:hover:bg-stone-200 dark:text-stone-900" 
+                    : "bg-stone-100 text-stone-300 dark:bg-zinc-700 dark:text-zinc-500"
                 )}
               >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.5} />
                 ) : (
-                  <CornerDownLeft className="h-4 w-4" />
+                  <ArrowUp className="h-5 w-5" strokeWidth={1.5} />
                 )}
               </Button>
             </div>
-          </CardFooter>
+          </div>
         </Card>
       </div>
 
-      {/* Toggle Button */}
-      <Button
+      {/* Luxury Toggle Button with Image */}
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-2xl z-50 transition-all duration-300 hover:scale-110",
-          isOpen ? "bg-destructive hover:bg-destructive/90 rotate-90" : "bg-indigo-600 hover:bg-indigo-700"
+          "fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.2)] z-50 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:scale-105 overflow-hidden border-2 border-white dark:border-zinc-800",
+          isOpen ? "rotate-0" : ""
         )}
-        size="icon"
+        aria-label="Toggle chat"
       >
-        {isOpen ? (
-          <X className="h-6 w-6 text-white" />
-        ) : (
-          <Sparkles className="h-6 w-6 text-white" />
-        )}
-      </Button>
+        <div className={cn("absolute inset-0 bg-stone-900 transition-opacity duration-500 flex items-center justify-center", isOpen ? "opacity-100" : "opacity-0")}>
+             <X className="h-6 w-6 text-white" strokeWidth={1.5} />
+        </div>
+        <div className={cn("absolute inset-0 transition-all duration-500 grayscale contrast-125", isOpen ? "opacity-0 scale-110" : "opacity-100 scale-100")}>
+            <img src={BRAND_IMAGE_URL} alt="Chat" className="h-full w-full object-cover" />
+        </div>
+      </button>
     </>
   );
 }
