@@ -121,14 +121,19 @@ services:
       DATABASE_URL: ${DIRECT_DATABASE_URL}
       DIRECT_DATABASE_URL: ${DIRECT_DATABASE_URL}
     volumes:
-      - ./:/app
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./prisma.config.ts:/app/prisma.config.ts
+      - migrate_node_modules:/app/node_modules
     working_dir: /app
     networks:
       - backend
+      - frontend
     command: >
       sh -c "
         echo 'Installing dependencies...' &&
-        npm install &&
+        npm ci --ignore-scripts &&
         echo 'Generating Prisma Client...' &&
         npx prisma generate &&
         echo 'Running migrations...' &&
@@ -229,4 +234,6 @@ volumes:
   redis_data:
     driver: local
   profile-pictures:
+    driver: local
+  migrate_node_modules:
     driver: local
