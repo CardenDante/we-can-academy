@@ -12,13 +12,15 @@ import {
   XCircle,
   UserCheck,
   Clock,
-  ShieldAlert
+  ShieldAlert,
+  WifiOff
 } from "lucide-react";
 import { ProfilePictureDisplay } from "@/components/profile-picture";
 import { MultiScanner } from "@/components/multi-scanner";
 import { AttendancePassport } from "@/components/attendance-passport";
+import { useOptimisticCheckIn } from "@/lib/offline/use-offline";
 
-type CheckInStatus = "checked_in" | "already_checked_in" | "expelled" | "not_found" | "no_weekend" | "not_weekend";
+type CheckInStatus = "checked_in" | "already_checked_in" | "expelled" | "not_found" | "no_weekend" | "not_weekend" | "queued";
 
 export function SecurityClient() {
   const [scanResult, setScanResult] = useState<{
@@ -32,6 +34,9 @@ export function SecurityClient() {
   const [studentData, setStudentData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [lastScanned, setLastScanned] = useState("");
+
+  // Use offline check-in hook
+  const { checkIn: offlineCheckIn, isProcessing } = useOptimisticCheckIn();
 
   // Vibration feedback helper
   const vibrate = (pattern: number | number[]) => {
@@ -47,22 +52,42 @@ export function SecurityClient() {
     setLastScanned(value);
 
     try {
-      const result = await checkInStudent(value);
-      setScanResult(result);
+      // Check if we're online
+      const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
 
-      // Fetch student's full data with attendance history if student exists
-      if (result.student?.admissionNumber) {
-        const fullStudentData = await getStudentByAdmissionWithHistory(result.student.admissionNumber);
-        setStudentData(fullStudentData);
-      } else {
+      if (!isOnline) {
+        // Offline mode - use the offline hook
+        const offlineResult = await offlineCheckIn(value);
+
+        setScanResult({
+          success: true,
+          status: "queued",
+          message: offlineResult.student
+            ? `${offlineResult.student.fullName} check-in queued for sync`
+            : "Check-in queued for sync",
+          student: offlineResult.student,
+        });
         setStudentData(null);
-      }
-
-      // Vibration feedback based on result
-      if (result.status === "checked_in" || result.status === "already_checked_in") {
-        vibrate(200); // Single vibration for success
+        vibrate(200);
       } else {
-        vibrate([200, 100, 200]); // Double vibration for error
+        // Online mode - call checkInStudent directly (only once)
+        const result = await checkInStudent(value);
+        setScanResult(result);
+
+        // Fetch student's full data with attendance history if student exists
+        if (result.student?.admissionNumber) {
+          const fullStudentData = await getStudentByAdmissionWithHistory(result.student.admissionNumber);
+          setStudentData(fullStudentData);
+        } else {
+          setStudentData(null);
+        }
+
+        // Vibration feedback based on result
+        if (result.status === "checked_in" || result.status === "already_checked_in") {
+          vibrate(200); // Single vibration for success
+        } else {
+          vibrate([200, 100, 200]); // Double vibration for error
+        }
       }
 
       // Clear last scanned after a short delay to allow re-scanning same student
@@ -78,7 +103,7 @@ export function SecurityClient() {
     } finally {
       setLoading(false);
     }
-  }, [lastScanned]);
+  }, [lastScanned, offlineCheckIn]);
 
   return (
     <div className="space-y-6">
@@ -91,6 +116,8 @@ export function SecurityClient() {
             ? "border-green-500 bg-green-500"
             : scanResult.status === "already_checked_in"
             ? "border-blue-500 bg-blue-500"
+            : scanResult.status === "queued"
+            ? "border-amber-500 bg-amber-500"
             : scanResult.status === "not_weekend"
             ? "border-amber-500 bg-amber-500"
             : "border-amber-500 bg-amber-500/5"
@@ -125,6 +152,12 @@ export function SecurityClient() {
                       <span className="text-sm font-bold text-white uppercase">Warning</span>
                     </div>
                   )}
+                </>
+              )}
+              {scanResult.status === "queued" && (
+                <>
+                  <WifiOff className="h-8 w-8 text-white" />
+                  <span className="text-xl font-bold text-white uppercase tracking-wide">Queued for Sync</span>
                 </>
               )}
               {scanResult.status === "not_weekend" && (
@@ -188,8 +221,31 @@ export function SecurityClient() {
         </CardContent>
       </Card>
 
+      {/* Queued Student Display (Offline Mode) */}
+      {scanResult && scanResult.status === "queued" && scanResult.student && (
+        <Card className="luxury-card border-0 flex flex-col">
+          <CardHeader className="pb-4 sm:pb-6 bg-amber-500/10">
+            <CardTitle className="text-base sm:text-lg font-medium tracking-tight uppercase flex items-center gap-2">
+              <WifiOff className="h-5 w-5 text-amber-600" />
+              Offline Check-In Queued
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 flex-1 flex flex-col pt-6">
+            <div className="text-center space-y-4">
+              <div className="text-lg font-bold">{scanResult.student.fullName}</div>
+              <Badge variant="outline" className="text-amber-600 border-amber-600">
+                Will sync when online
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                This check-in has been queued and will be processed when internet connection is restored.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Student Details and Attendance - Matching Cashier Layout */}
-      {studentData && scanResult && scanResult.student && (
+      {studentData && scanResult && scanResult.student && scanResult.status !== "queued" && (
         <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3 items-stretch">
           {/* Student Details Card */}
           <Card className="luxury-card border-0 flex flex-col">
