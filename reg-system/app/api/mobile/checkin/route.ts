@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyMobileToken, hasRole } from "@/lib/api-auth";
+import { rateLimitMiddleware } from "@/lib/rate-limit";
+import { cachedListResponse } from "@/lib/api-cache";
 
 /**
  * Check In Student at Gate
  * POST /api/mobile/checkin
  * Headers: Authorization: Bearer <token>
  * Body: { admissionNumber: string }
+ *
+ * OPTIMIZED: Uses parallel queries and upsert for faster response
+ * Rate limited: 120 requests/minute (scan profile)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +32,10 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    // Rate limiting for scan operations
+    const rateLimitError = await rateLimitMiddleware(request, user.userId, "scan");
+    if (rateLimitError) return rateLimitError;
 
     const { admissionNumber } = await request.json();
 
@@ -49,13 +58,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find student
-    const student = await prisma.student.findUnique({
-      where: { admissionNumber },
-      include: {
-        course: true,
-      },
-    });
+    // Calculate Saturday date for weekend lookup
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const saturdayDate = dayOfWeek === 0
+      ? new Date(today.getTime() - 24 * 60 * 60 * 1000)
+      : today;
+    const day = dayOfWeek === 6 ? "SATURDAY" : "SUNDAY";
+
+    // OPTIMIZATION: Fetch student and weekend in parallel
+    const [student, weekend] = await Promise.all([
+      prisma.student.findUnique({
+        where: { admissionNumber },
+        select: {
+          id: true,
+          fullName: true,
+          admissionNumber: true,
+          isExpelled: true,
+          hasWarning: true,
+          warningReason: true,
+          course: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+      prisma.weekend.findUnique({
+        where: { saturdayDate },
+        select: {
+          id: true,
+          saturdayDate: true,
+          name: true,
+        },
+      }),
+    ]);
 
     if (!student) {
       return NextResponse.json(
@@ -76,19 +114,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current weekend
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // If Sunday, look for weekend starting yesterday (Saturday)
-    const saturdayDate = dayOfWeek === 0
-      ? new Date(today.getTime() - 24 * 60 * 60 * 1000)
-      : today;
-
-    const weekend = await prisma.weekend.findUnique({
-      where: { saturdayDate },
-    });
-
     if (!weekend) {
       return NextResponse.json(
         { error: "No active weekend found for today" },
@@ -96,11 +121,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine which day (SATURDAY or SUNDAY)
-    const day = dayOfWeek === 6 ? "SATURDAY" : "SUNDAY";
-
-    // Check if already checked in for this day
-    const existingCheckIn = await prisma.checkIn.findUnique({
+    // OPTIMIZATION: Use upsert to handle concurrent check-ins and avoid extra query
+    // This combines the "check existing" and "create" into a single atomic operation
+    const checkIn = await prisma.checkIn.upsert({
       where: {
         studentId_weekendId_day: {
           studentId: student.id,
@@ -108,49 +131,52 @@ export async function POST(request: NextRequest) {
           day,
         },
       },
-    });
-
-    if (existingCheckIn) {
-      return NextResponse.json(
-        {
-          error: `${student.fullName} has already checked in for ${day}`,
-          student,
-          checkIn: existingCheckIn,
-          status: "already_checked_in",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Create check-in record
-    const checkIn = await prisma.checkIn.create({
-      data: {
+      update: {}, // Don't update if exists
+      create: {
         studentId: student.id,
         weekendId: weekend.id,
         day,
         checkedBy: user.name,
         status: "PRESENT",
       },
-      include: {
-        student: {
-          include: {
-            course: true,
-          },
-        },
-        weekend: true,
+      select: {
+        id: true,
+        day: true,
+        checkedAt: true,
+        checkedBy: true,
+        status: true,
       },
     });
 
+    // Check if this was an existing record (checkedAt will be older than a few seconds ago)
+    const isExisting = checkIn.checkedAt < new Date(Date.now() - 5000);
+
+    if (isExisting) {
+      return NextResponse.json(
+        {
+          error: `${student.fullName} has already checked in for ${day}`,
+          student,
+          checkIn,
+          status: "already_checked_in",
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      checkIn,
+      checkIn: {
+        ...checkIn,
+        student,
+        weekend,
+      },
       student,
       status: "checked_in",
     });
   } catch (error: any) {
     console.error("Check-in error:", error);
 
-    // Handle unique constraint violation
+    // Handle unique constraint violation (race condition on upsert)
     if (error.code === "P2002") {
       return NextResponse.json(
         { error: "Student has already checked in for this day" },
@@ -215,31 +241,43 @@ export async function GET(request: NextRequest) {
     // Determine which day
     const day = dayOfWeek === 6 ? "SATURDAY" : "SUNDAY";
 
-    // Get check-ins for today
+    // Get check-ins for today with minimal data
     const checkIns = await prisma.checkIn.findMany({
       where: {
         weekendId: weekend.id,
         day,
         status: "PRESENT",
       },
-      include: {
+      select: {
+        id: true,
+        checkedAt: true,
+        checkedBy: true,
         student: {
-          include: {
-            course: true,
+          select: {
+            id: true,
+            fullName: true,
+            admissionNumber: true,
+            course: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
-        weekend: true,
       },
       orderBy: {
         checkedAt: "desc",
       },
     });
 
-    return NextResponse.json({
+    // Return with cache headers (30 second cache for list data)
+    return cachedListResponse({
       success: true,
       checkIns,
       weekend,
       day,
+      count: checkIns.length,
     });
   } catch (error) {
     console.error("Get check-ins error:", error);

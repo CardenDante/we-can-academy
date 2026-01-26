@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyMobileToken, hasRole } from "@/lib/api-auth";
+import { getCachedTeacherProfile } from "@/lib/teacher-cache";
 
 /**
  * Get Attendance for a Session
  * GET /api/mobile/attendance?sessionId=xxx
  * Headers: Authorization: Bearer <token>
+ *
+ * OPTIMIZED: Uses Redis-cached teacher profile
  */
 export async function GET(request: NextRequest) {
   try {
@@ -39,13 +42,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
-    const where: any = { sessionId };
+    const where: { sessionId: string; classId?: string } = { sessionId };
 
-    // For teachers, only show their class attendance
+    // For teachers, only show their class attendance (use cached profile)
     if (user.role === "TEACHER") {
-      const teacher = await prisma.teacher.findUnique({
-        where: { userId: user.userId },
-      });
+      const teacher = await getCachedTeacherProfile(user.userId);
 
       if (!teacher) {
         return NextResponse.json(
@@ -54,26 +55,42 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      where.classId = teacher.classId;
+      if (teacher.class) {
+        where.classId = teacher.class.id;
+      }
     }
 
-    // Fetch attendance records
+    // Fetch attendance records with minimal includes
     const attendances = await prisma.attendance.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        markedAt: true,
+        markedBy: true,
         student: {
-          include: {
-            course: true,
+          select: {
+            id: true,
+            fullName: true,
+            admissionNumber: true,
+            course: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         session: {
-          include: {
-            weekend: true,
+          select: {
+            id: true,
+            sessionType: true,
+            day: true,
           },
         },
         class: {
-          include: {
-            course: true,
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
@@ -100,6 +117,8 @@ export async function GET(request: NextRequest) {
  * POST /api/mobile/attendance
  * Headers: Authorization: Bearer <token>
  * Body: { studentId: string, sessionId: string, classId?: string }
+ *
+ * OPTIMIZED: Uses parallel queries and Redis-cached teacher profile
  */
 export async function POST(request: NextRequest) {
   try {
@@ -130,11 +149,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the session
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-      include: { weekend: true },
-    });
+    // OPTIMIZATION: Fetch student, session, and teacher (if applicable) in parallel
+    const [student, session, teacher] = await Promise.all([
+      prisma.student.findUnique({
+        where: { id: studentId },
+        select: {
+          id: true,
+          fullName: true,
+          admissionNumber: true,
+          isExpelled: true,
+          courseId: true,
+        },
+      }),
+      prisma.session.findUnique({
+        where: { id: sessionId },
+        select: {
+          id: true,
+          sessionType: true,
+          weekendId: true,
+          day: true,
+        },
+      }),
+      user.role === "TEACHER" ? getCachedTeacherProfile(user.userId) : null,
+    ]);
 
     if (!session) {
       return NextResponse.json(
@@ -142,12 +179,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    // Get student info
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-      select: { fullName: true, admissionNumber: true, isExpelled: true, courseId: true },
-    });
 
     if (!student) {
       return NextResponse.json(
@@ -167,21 +198,17 @@ export async function POST(request: NextRequest) {
     // For teachers, verify permissions and set classId
     let finalClassId = classId;
     if (user.role === "TEACHER") {
-      const teacher = await prisma.teacher.findUnique({
-        where: { userId: user.userId },
-        include: {
-          class: {
-            include: {
-              course: true,
-            },
-          },
-        },
-      });
-
       if (!teacher) {
         return NextResponse.json(
           { error: "Teacher profile not found" },
           { status: 404 }
+        );
+      }
+
+      if (!teacher.class) {
+        return NextResponse.json(
+          { error: "Teacher has no assigned class" },
+          { status: 403 }
         );
       }
 
@@ -198,8 +225,9 @@ export async function POST(request: NextRequest) {
         const sessionClass = await prisma.sessionClass.findFirst({
           where: {
             sessionId: sessionId,
-            classId: teacher.classId,
+            classId: teacher.class.id,
           },
+          select: { id: true },
         });
 
         if (!sessionClass) {
@@ -210,19 +238,20 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      finalClassId = teacher.classId;
+      finalClassId = teacher.class.id;
     }
 
     // Check if student has checked in (for CHAPEL sessions only)
     if (session.sessionType === "CHAPEL") {
-      const checkIns = await prisma.checkIn.findMany({
+      const checkInCount = await prisma.checkIn.count({
         where: {
           studentId: studentId,
           weekendId: session.weekendId,
+          status: "PRESENT",
         },
       });
 
-      if (checkIns.length === 0) {
+      if (checkInCount === 0) {
         return NextResponse.json(
           { error: `${student.fullName} has not checked in at the gate this weekend` },
           { status: 400 }
@@ -230,37 +259,63 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check for existing attendance
-    const existingAttendance = await prisma.attendance.findUnique({
+    // OPTIMIZATION: Use upsert to handle concurrent marking
+    const attendance = await prisma.attendance.upsert({
       where: {
         studentId_sessionId: {
           studentId: studentId,
           sessionId: sessionId,
         },
       },
-    });
-
-    if (existingAttendance) {
-      return NextResponse.json(
-        { error: `${student.fullName} has already been marked for this session` },
-        { status: 400 }
-      );
-    }
-
-    // Create attendance record
-    const attendance = await prisma.attendance.create({
-      data: {
+      update: {}, // Don't update if exists
+      create: {
         studentId,
         sessionId,
         classId: finalClassId || null,
         markedBy: user.name,
       },
-      include: {
-        student: { include: { course: true } },
-        session: { include: { weekend: true } },
-        class: { include: { course: true } },
+      select: {
+        id: true,
+        markedAt: true,
+        markedBy: true,
+        student: {
+          select: {
+            id: true,
+            fullName: true,
+            admissionNumber: true,
+            course: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        session: {
+          select: {
+            id: true,
+            sessionType: true,
+            day: true,
+          },
+        },
+        class: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
+
+    // Check if this was an existing record (markedAt will be older than a few seconds ago)
+    const isExisting = attendance.markedAt < new Date(Date.now() - 5000);
+
+    if (isExisting) {
+      return NextResponse.json(
+        { error: `${student.fullName} has already been marked for this session` },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

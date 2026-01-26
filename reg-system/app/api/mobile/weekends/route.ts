@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyMobileToken, hasRole } from "@/lib/api-auth";
+import { cachedStaticResponse } from "@/lib/api-cache";
 
 /**
  * Get Weekends for Mobile App
@@ -8,6 +9,8 @@ import { verifyMobileToken, hasRole } from "@/lib/api-auth";
  * Headers: Authorization: Bearer <token>
  * Query params:
  *   - limit (optional): Limit number of results (default 10)
+ *
+ * OPTIMIZED: Cached response (5 min), minimal payload
  */
 export async function GET(request: NextRequest) {
   try {
@@ -33,13 +36,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    // Fetch weekends
+    // Fetch weekends with minimal data
     const weekends = await prisma.weekend.findMany({
       orderBy: {
         saturdayDate: "desc",
       },
-      take: Math.min(limit, 50), // Max 50
-      include: {
+      take: Math.min(limit, 50),
+      select: {
+        id: true,
+        name: true,
+        saturdayDate: true,
+        isCompleted: true,
         _count: {
           select: {
             sessions: true,
@@ -49,7 +56,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    // Return with cache headers (weekends don't change often)
+    return cachedStaticResponse({
       success: true,
       weekends,
     });

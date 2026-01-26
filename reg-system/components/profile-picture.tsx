@@ -158,6 +158,7 @@ export function ProfilePictureDisplay({
           src={profilePictureUrl}
           alt="Profile"
           className="w-full h-full object-cover"
+          loading="lazy"
           onError={(e) => {
             console.error("Failed to load profile picture:", profilePictureUrl);
             setImageError(true);
@@ -351,6 +352,7 @@ export function ProfilePictureUpload({
                 src={preview}
                 alt="Preview"
                 className="w-48 h-48 rounded-full object-cover border-4 border-green-500/30"
+                loading="lazy"
               />
               <Button
                 type="button"

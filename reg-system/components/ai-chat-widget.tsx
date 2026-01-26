@@ -127,8 +127,8 @@ export function AIChatWidget() {
                 <img src={AVATAR_URL} alt="AI" className="h-full w-full object-cover" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Concierge</h3>
-                <p className="text-[10px] uppercase tracking-widest text-gray-500">Assistant</p>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Sentinel</h3>
+                <p className="text-[10px] uppercase tracking-widest text-gray-500">Your Intelligent Detective</p>
               </div>
             </div>
             <Button

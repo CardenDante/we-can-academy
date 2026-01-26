@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyMobileToken, hasRole } from "@/lib/api-auth";
+import { getCachedTeacherProfile } from "@/lib/teacher-cache";
+import { cachedListResponse } from "@/lib/api-cache";
+import { SessionType, Prisma } from "@prisma/client";
 
 /**
  * Get Sessions for Mobile App
@@ -9,6 +12,8 @@ import { verifyMobileToken, hasRole } from "@/lib/api-auth";
  * Query params:
  *   - weekendId (optional): Filter by weekend
  *   - sessionType (optional): CHAPEL or CLASS
+ *
+ * OPTIMIZED: Uses cached teacher profile, minimal payload, response caching
  */
 export async function GET(request: NextRequest) {
   try {
@@ -36,21 +41,19 @@ export async function GET(request: NextRequest) {
     const sessionType = searchParams.get("sessionType");
 
     // Build query
-    const where: any = {};
+    const where: Prisma.SessionWhereInput = {};
 
     if (weekendId) {
       where.weekendId = weekendId;
     }
 
-    if (sessionType) {
-      where.sessionType = sessionType;
+    if (sessionType && (sessionType === "CLASS" || sessionType === "CHAPEL")) {
+      where.sessionType = sessionType as SessionType;
     }
 
-    // For teachers, only show their class sessions
+    // For teachers, only show their class sessions (use cached profile)
     if (user.role === "TEACHER") {
-      const teacher = await prisma.teacher.findUnique({
-        where: { userId: user.userId },
-      });
+      const teacher = await getCachedTeacherProfile(user.userId);
 
       if (!teacher) {
         return NextResponse.json(
@@ -59,24 +62,46 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      where.sessionType = "CLASS";
-      where.sessionClasses = {
-        some: {
-          classId: teacher.classId,
-        },
-      };
+      if (teacher.class) {
+        where.sessionType = SessionType.CLASS;
+        where.sessionClasses = {
+          some: {
+            classId: teacher.class.id,
+          },
+        };
+      }
     }
 
-    // Fetch sessions
+    // Fetch sessions with minimal data for mobile
     const sessions = await prisma.session.findMany({
       where,
-      include: {
-        weekend: true,
+      select: {
+        id: true,
+        name: true,
+        sessionType: true,
+        day: true,
+        startTime: true,
+        endTime: true,
+        weekend: {
+          select: {
+            id: true,
+            name: true,
+            saturdayDate: true,
+          },
+        },
         sessionClasses: {
-          include: {
+          select: {
+            id: true,
             class: {
-              include: {
-                course: true,
+              select: {
+                id: true,
+                name: true,
+                course: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -92,10 +117,11 @@ export async function GET(request: NextRequest) {
         { day: "asc" },
         { startTime: "asc" },
       ],
-      take: 50, // Limit results for mobile
+      take: 50,
     });
 
-    return NextResponse.json({
+    // Return with cache headers (30 second cache)
+    return cachedListResponse({
       success: true,
       sessions,
     });

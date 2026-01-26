@@ -176,6 +176,8 @@ services:
       R2_PUBLIC_URL: ${R2_PUBLIC_URL}
       # Anthropic API for AI Chat
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # OpenAI API for AI Chat
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
       - "3001:3000"
     volumes:

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { OfflineProvider } from "@/components/offline-provider";
 
 export const metadata: Metadata = {
   title: "We Can Academy",
@@ -20,7 +21,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased" style={{ fontFamily: 'Roboto, system-ui, sans-serif' }}>
-        {children}
+        <OfflineProvider>
+          {children}
+        </OfflineProvider>
       </body>
     </html>
   );

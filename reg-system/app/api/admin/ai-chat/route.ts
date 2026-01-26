@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Anthropic from "@anthropic-ai/sdk";
-
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+import OpenAI from "openai";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+// Lazy initialization of OpenAI client to avoid build-time errors
+function getOpenAIClient() {
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
+    console.log("[AI Chat] Request received");
+
     // Check authentication
     const user = await getUser();
+    console.log("[AI Chat] User authenticated:", { userId: user?.id, role: user?.role });
+
     if (!user || user.role !== "ADMIN") {
+      console.log("[AI Chat] Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -27,7 +34,13 @@ export async function POST(request: NextRequest) {
       history: Message[];
     };
 
+    console.log("[AI Chat] Request body parsed:", {
+      messageLength: message?.length,
+      historyLength: history?.length
+    });
+
     if (!message || typeof message !== "string") {
+      console.log("[AI Chat] Invalid message received");
       return NextResponse.json(
         { error: "Message is required" },
         { status: 400 }
@@ -35,27 +48,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Get database statistics and relevant data based on the question
+    console.log("[AI Chat] Fetching database context...");
     const databaseContext = await getDatabaseContext(message);
+    console.log("[AI Chat] Database context fetched, length:", databaseContext.length);
 
-    // Prepare messages for Claude
-    const messages: Anthropic.MessageParam[] = [
-      // Add conversation history
-      ...history.map((msg) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
-      })),
-      // Add current message with database context
+    // Initialize OpenAI client here (runtime, not build time)
+    console.log("[AI Chat] Initializing OpenAI client...");
+    console.log("[AI Chat] OpenAI API Key present:", !!process.env.OPENAI_API_KEY);
+    console.log("[AI Chat] OpenAI API Key length:", process.env.OPENAI_API_KEY?.length || 0);
+
+    const openai = getOpenAIClient();
+    console.log("[AI Chat] OpenAI client initialized");
+
+    // Prepare messages for OpenAI
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      // System message
       {
-        role: "user" as const,
-        content: `${message}\n\nHere's the current database information that might be relevant:\n${databaseContext}`,
-      },
-    ];
-
-    // Call Anthropic API
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1024,
-      system: `You are a helpful AI assistant for the We Can Academy registration system. You have read-only access to the database and can help answer questions about students, courses, teachers, attendance, check-ins, weekends, and chapel sessions.
+        role: "system",
+        content: `You are a helpful AI assistant for the We Can Academy registration system. You have read-only access to the database and can help answer questions about students, courses, teachers, attendance, check-ins, weekends, and chapel sessions.
 
 Your role is to:
 - Analyze the provided database information
@@ -70,16 +80,50 @@ Important:
 - If you don't have enough information, say so
 - Format responses in a clear, readable way
 - Use bullet points and formatting when helpful`,
+      },
+      // Add conversation history
+      ...history.map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      })),
+      // Add current message with database context
+      {
+        role: "user" as const,
+        content: `${message}\n\nHere's the current database information that might be relevant:\n${databaseContext}`,
+      },
+    ];
+
+    console.log("[AI Chat] Messages prepared, total count:", messages.length);
+
+    // Call OpenAI API
+    console.log("[AI Chat] Calling OpenAI API with model: gpt-4o");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // Using GPT-4o (latest and most capable model)
+      max_tokens: 1024,
+      temperature: 0.7,
       messages,
     });
 
+    console.log("[AI Chat] OpenAI API response received");
+    console.log("[AI Chat] Response choices length:", response.choices?.length);
+
     // Extract the response text
-    const responseText =
-      response.content[0].type === "text" ? response.content[0].text : "";
+    const responseText = response.choices[0]?.message?.content || "";
+    console.log("[AI Chat] Response text extracted, length:", responseText.length);
 
     return NextResponse.json({ response: responseText });
   } catch (error) {
-    console.error("AI Chat error:", error);
+    console.error("[AI Chat] ERROR occurred:");
+    console.error("[AI Chat] Error name:", error instanceof Error ? error.name : "Unknown");
+    console.error("[AI Chat] Error message:", error instanceof Error ? error.message : error);
+    console.error("[AI Chat] Error stack:", error instanceof Error ? error.stack : "No stack trace");
+
+    // Log more details if it's an OpenAI error
+    if (error && typeof error === 'object' && 'status' in error) {
+      console.error("[AI Chat] OpenAI API error status:", (error as any).status);
+      console.error("[AI Chat] OpenAI API error details:", JSON.stringify(error, null, 2));
+    }
+
     return NextResponse.json(
       { error: "Failed to process AI request" },
       { status: 500 }
@@ -96,6 +140,8 @@ async function getDatabaseContext(question: string): Promise<string> {
   const context: string[] = [];
 
   try {
+    console.log("[AI Chat] getDatabaseContext: Starting to fetch basic counts...");
+
     // Always include basic counts
     const [
       studentCount,
@@ -114,6 +160,8 @@ async function getDatabaseContext(question: string): Promise<string> {
       prisma.weekend.count(),
       prisma.session.count(),
     ]);
+
+    console.log("[AI Chat] getDatabaseContext: Basic counts fetched successfully");
 
     context.push(`**System Overview:**`);
     context.push(`- Total Students: ${studentCount}`);
@@ -282,9 +330,11 @@ async function getDatabaseContext(question: string): Promise<string> {
       context.push("");
     }
 
+    console.log("[AI Chat] getDatabaseContext: Context built successfully, total sections:", context.length);
     return context.join("\n");
   } catch (error) {
-    console.error("Error getting database context:", error);
+    console.error("[AI Chat] getDatabaseContext: ERROR occurred");
+    console.error("[AI Chat] getDatabaseContext: Error details:", error);
     return "Error retrieving database information.";
   }
 }

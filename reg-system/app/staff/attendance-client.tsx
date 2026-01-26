@@ -8,7 +8,8 @@ import { markAttendance, getAttendanceBySession } from "@/app/actions/attendance
 import { getStudentByAdmission } from "@/app/actions/students";
 import { ProfilePictureDisplay } from "@/components/profile-picture";
 import { MultiScanner } from "@/components/multi-scanner";
-import { CheckCircle, Church, AlertCircle, User, Hash, BookOpen, XCircle } from "lucide-react";
+import { CheckCircle, Church, AlertCircle, User, Hash, BookOpen, XCircle, WifiOff } from "lucide-react";
+import { useOptimisticAttendance } from "@/lib/offline";
 
 export function AttendanceClient() {
   const [currentSession, setCurrentSession] = useState<any>(null);
@@ -20,9 +21,12 @@ export function AttendanceClient() {
 
   // Scanned student display - auto-updates on each scan
   const [scannedStudent, setScannedStudent] = useState<any>(null);
-  const [scanStatus, setScanStatus] = useState<"success" | "error" | null>(null);
+  const [scanStatus, setScanStatus] = useState<"success" | "error" | "queued" | null>(null);
 
   const lastSubmitTime = { current: 0 };
+
+  // Offline support hook
+  const { markAttendance: markAttendanceOffline, lastResult: offlineResult } = useOptimisticAttendance();
 
   useEffect(() => {
     loadSessionsAndDetectCurrent();
@@ -140,23 +144,44 @@ export function AttendanceClient() {
       // Set scanned student for display (auto-updates each scan)
       setScannedStudent(student);
 
-      const result = await markAttendance({
-        studentId: student.id,
-        sessionId: currentSession.id,
-        classId: undefined,
-      });
+      // Use offline-capable attendance marking
+      await markAttendanceOffline(
+        student.id,
+        currentSession.id,
+        {
+          admissionNumber: student.admissionNumber,
+          fullName: student.fullName,
+        },
+        // Online function
+        async (studentId, sessionId) => {
+          const result = await markAttendance({
+            studentId,
+            sessionId,
+            classId: undefined,
+          });
 
-      // Check result - server action now returns {success, data/error}
-      if (!result.success) {
-        setError(result.error || "Failed to mark attendance");
+          return {
+            success: result.success,
+            error: result.error,
+          };
+        }
+      );
+
+      // Check offline result
+      if (offlineResult?.success) {
+        if (offlineResult.isOffline) {
+          setSuccess(`${student.fullName} - Queued for sync (offline)`);
+          setScanStatus("queued");
+        } else {
+          setSuccess(`Attendance marked for ${student.fullName}`);
+          setScanStatus("success");
+        }
+        vibrate(200); // Single vibration for success
+      } else if (offlineResult?.message) {
+        setError(offlineResult.message);
         setScanStatus("error");
         vibrate([200, 100, 200]); // Double vibration for error
-        return;
       }
-
-      setSuccess(`Attendance marked for ${student.fullName}`);
-      setScanStatus("success");
-      vibrate(200); // Single vibration for success
     } catch (err: any) {
       // Catch any unexpected errors
       const errorMessage = err?.message || err?.toString() || "Failed to mark attendance";
@@ -167,7 +192,7 @@ export function AttendanceClient() {
     } finally {
       setLoading(false);
     }
-  }, [currentSession]);
+  }, [currentSession, markAttendanceOffline, offlineResult]);
 
   return (
     <div className="space-y-6">
@@ -293,6 +318,12 @@ export function AttendanceClient() {
                   <span className="text-xs font-medium text-green-600 uppercase">Marked</span>
                 </div>
               )}
+              {scanStatus === "queued" && (
+                <div className="flex items-center gap-2">
+                  <WifiOff className="h-5 w-5 text-yellow-500" />
+                  <span className="text-xs font-medium text-yellow-600 uppercase">Queued</span>
+                </div>
+              )}
               {scanStatus === "error" && (
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-destructive" />
@@ -350,6 +381,12 @@ export function AttendanceClient() {
                     <div className="flex flex-col items-center gap-1">
                       <CheckCircle className="h-12 w-12 text-green-500" />
                       <span className="text-xs font-medium text-green-600 uppercase">Marked</span>
+                    </div>
+                  )}
+                  {scanStatus === "queued" && (
+                    <div className="flex flex-col items-center gap-1">
+                      <WifiOff className="h-12 w-12 text-yellow-500" />
+                      <span className="text-xs font-medium text-yellow-600 uppercase">Queued</span>
                     </div>
                   )}
                   {scanStatus === "error" && (
