@@ -12,12 +12,10 @@ import {
   XCircle,
   Users,
   Calendar,
-  WifiOff,
 } from "lucide-react";
 import { ProfilePictureDisplay } from "@/components/profile-picture";
 import { MultiScanner } from "@/components/multi-scanner";
 import { AttendancePassport } from "@/components/attendance-passport";
-import { useOptimisticAttendance } from "@/lib/offline";
 
 interface TeacherAttendanceClientProps {
   sessions: any[];
@@ -43,10 +41,6 @@ export function TeacherAttendanceClient({
   const [loading, setLoading] = useState(false);
   const [lastScanned, setLastScanned] = useState("");
   const [attendanceCount, setAttendanceCount] = useState(0);
-  const [scanStatus, setScanStatus] = useState<"success" | "error" | "queued" | null>(null);
-
-  // Offline support hook
-  const { markAttendance: markAttendanceOffline, lastResult: offlineResult } = useOptimisticAttendance();
 
   // Auto-detect current session based on date and time
   function detectCurrentSession(allSessions: any[]) {
@@ -127,14 +121,12 @@ export function TeacherAttendanceClient({
         message: "No active session - cannot mark attendance outside session time",
       });
       setStudentData(null);
-      setScanStatus("error");
       vibrate([200, 100, 200]); // Double vibration for error
       return;
     }
 
     setLoading(true);
     setLastScanned(value);
-    setScanStatus(null); // Clear previous status
 
     try {
       // Get student info first
@@ -146,7 +138,6 @@ export function TeacherAttendanceClient({
           message: "Student not found",
         });
         setStudentData(null);
-        setScanStatus("error");
         setLoading(false);
         vibrate([200, 100, 200]); // Double vibration for error
         setTimeout(() => setLastScanned(""), 2000);
@@ -162,61 +153,33 @@ export function TeacherAttendanceClient({
           message: `${student.fullName} is not in your course`,
           student,
         });
-        setScanStatus("error");
         setLoading(false);
         vibrate([200, 100, 200]); // Double vibration for error
         setTimeout(() => setLastScanned(""), 2000);
         return;
       }
 
-      // Mark attendance with offline support
-      await markAttendanceOffline(
-        student.id,
-        currentSession.id,
-        {
-          admissionNumber: student.admissionNumber,
-          fullName: student.fullName,
-        },
-        // Online function
-        async (studentId, sessionId) => {
-          const result = await markAttendance({
-            studentId,
-            sessionId,
-            classId: classId,
-          });
-          return {
-            success: result.success,
-            error: result.error,
-          };
-        }
-      );
+      // Mark attendance
+      const result = await markAttendance({
+        studentId: student.id,
+        sessionId: currentSession.id,
+        classId: classId,
+      });
 
-      // Check offline result
-      if (offlineResult?.success) {
-        if (offlineResult.isOffline) {
-          setScanResult({
-            success: true,
-            message: `${student.fullName} - Queued for sync (offline)`,
-            student,
-          });
-          setScanStatus("queued");
-        } else {
-          setScanResult({
-            success: true,
-            message: `Attendance marked for ${student.fullName}`,
-            student,
-          });
-          setScanStatus("success");
-          await loadAttendanceCount(currentSession.id);
-        }
-        vibrate(200); // Single vibration for success
-      } else if (offlineResult?.message) {
+      if (result.success) {
         setScanResult({
-          success: false,
-          message: offlineResult.message,
+          success: true,
+          message: `Attendance marked for ${student.fullName}`,
           student,
         });
-        setScanStatus("error");
+        vibrate(200); // Single vibration for success
+        await loadAttendanceCount(currentSession.id);
+      } else {
+        setScanResult({
+          success: false,
+          message: result.error || "Failed to mark attendance",
+          student,
+        });
         vibrate([200, 100, 200]); // Double vibration for error
       }
 
@@ -230,12 +193,11 @@ export function TeacherAttendanceClient({
         message: errorMessage,
       });
       setStudentData(null);
-      setScanStatus("error");
       vibrate([200, 100, 200]); // Double vibration for error
     } finally {
       setLoading(false);
     }
-  }, [currentSession, courseId, classId, lastScanned, markAttendanceOffline, offlineResult]);
+  }, [currentSession, courseId, classId, lastScanned]);
 
   const totalStudents = students.length;
 
@@ -290,23 +252,16 @@ export function TeacherAttendanceClient({
       {/* Status Banner - Matching Security Design */}
       {scanResult && scanResult.student && (
         <Card className={`border-2 transition-all duration-300 ${
-          scanStatus === "success"
+          scanResult.success
             ? "border-green-500 bg-green-500"
-            : scanStatus === "queued"
-            ? "border-yellow-500 bg-yellow-500"
             : "border-red-500 bg-red-500"
         }`}>
           <CardContent className="py-4">
             <div className="flex items-center justify-center gap-3">
-              {scanStatus === "success" ? (
+              {scanResult.success ? (
                 <>
                   <CheckCircle className="h-8 w-8 text-white" />
                   <span className="text-xl font-bold text-white uppercase tracking-wide">Attendance Marked</span>
-                </>
-              ) : scanStatus === "queued" ? (
-                <>
-                  <WifiOff className="h-8 w-8 text-white" />
-                  <span className="text-xl font-bold text-white uppercase tracking-wide">Queued for Sync (Offline)</span>
                 </>
               ) : (
                 <>
