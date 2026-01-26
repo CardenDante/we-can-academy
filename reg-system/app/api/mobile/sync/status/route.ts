@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyMobileToken, hasRole } from "@/lib/api-auth";
+import { getDayOfWeek, getWeekendSaturdayDate, isWeekend } from "@/lib/date-utils";
 
 /**
  * Get Sync Status and Latest Data Timestamps
@@ -82,20 +83,10 @@ export async function GET(request: NextRequest) {
         : null,
     ]);
 
-    // Get current weekend
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const saturdayDate = dayOfWeek === 0
-      ? new Date(today.getTime() - 24 * 60 * 60 * 1000)
-      : dayOfWeek === 6
-      ? today
-      : null;
-
+    // Get current weekend using date utility for testing support
     let currentWeekend = null;
-    if (saturdayDate) {
+    if (isWeekend()) {
+      const saturdayDate = getWeekendSaturdayDate();
       currentWeekend = await prisma.weekend.findUnique({
         where: { saturdayDate },
         select: {

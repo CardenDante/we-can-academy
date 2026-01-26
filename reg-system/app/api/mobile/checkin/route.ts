@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyMobileToken, hasRole } from "@/lib/api-auth";
+import {
+  getDayOfWeek,
+  isWeekend,
+  getCurrentWeekendDay,
+  getWeekendSaturdayDate,
+} from "@/lib/date-utils";
 
 /**
  * Check In Student at Gate
@@ -38,16 +44,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if it's a weekend day (Saturday or Sunday)
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-
-    if (dayOfWeek !== 6 && dayOfWeek !== 0) {
-      // 6 = Saturday, 0 = Sunday
+    // Use date utility for testing support (TEST_DATE_OVERRIDE env var)
+    if (!isWeekend()) {
       return NextResponse.json(
         { error: "Check-ins are only allowed on weekends (Saturday and Sunday)" },
         { status: 400 }
       );
     }
+
+    const dayOfWeek = getDayOfWeek();
 
     // Find student
     const student = await prisma.student.findUnique({
@@ -76,14 +81,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current weekend
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // If Sunday, look for weekend starting yesterday (Saturday)
-    const saturdayDate = dayOfWeek === 0
-      ? new Date(today.getTime() - 24 * 60 * 60 * 1000)
-      : today;
+    // Get current weekend using date utility
+    const saturdayDate = getWeekendSaturdayDate();
 
     const weekend = await prisma.weekend.findUnique({
       where: { saturdayDate },
@@ -97,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine which day (SATURDAY or SUNDAY)
-    const day = dayOfWeek === 6 ? "SATURDAY" : "SUNDAY";
+    const day = getCurrentWeekendDay();
 
     // Check if already checked in for this day
     const existingCheckIn = await prisma.checkIn.findUnique({
@@ -190,16 +189,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get today's date
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // If Sunday, look for weekend starting yesterday (Saturday)
-    const saturdayDate = dayOfWeek === 0
-      ? new Date(today.getTime() - 24 * 60 * 60 * 1000)
-      : today;
+    // Get today's date using date utility for testing support
+    const saturdayDate = getWeekendSaturdayDate();
 
     const weekend = await prisma.weekend.findUnique({
       where: { saturdayDate },
@@ -213,7 +204,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine which day
-    const day = dayOfWeek === 6 ? "SATURDAY" : "SUNDAY";
+    const day = getCurrentWeekendDay();
 
     // Get check-ins for today
     const checkIns = await prisma.checkIn.findMany({

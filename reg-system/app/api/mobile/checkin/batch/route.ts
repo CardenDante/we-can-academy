@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyMobileToken, hasRole } from "@/lib/api-auth";
+import { getCurrentDate } from "@/lib/date-utils";
 
 /**
  * Batch Check-In Students - Optimized for Offline Sync
@@ -73,8 +74,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Parse check-in time
-        const checkInTime = checkedAt ? new Date(checkedAt) : new Date();
+        // Parse check-in time (use date utility for testing support when no checkedAt provided)
+        const checkInTime = checkedAt ? new Date(checkedAt) : getCurrentDate();
         const dayOfWeek = checkInTime.getDay();
 
         // Verify it's a weekend day

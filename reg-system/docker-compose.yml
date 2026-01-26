@@ -112,7 +112,10 @@ services:
 
   # Database migration service - runs once on startup
   migrate:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
     container_name: wecanacademy-migrate-dev
     depends_on:
       postgres:
@@ -120,17 +123,11 @@ services:
     environment:
       DATABASE_URL: ${DIRECT_DATABASE_URL:-postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public}
       DIRECT_DATABASE_URL: ${DIRECT_DATABASE_URL:-postgresql://wecanacademy:wecanacademy123@postgres:5432/wecanacademy?schema=public}
-    volumes:
-      - ./:/app
     working_dir: /app
     networks:
       - backend
     command: >
       sh -c "
-        echo 'Installing dependencies...' &&
-        npm install &&
-        echo 'Generating Prisma Client...' &&
-        npx prisma generate &&
         echo 'Running migrations...' &&
         npx prisma migrate deploy &&
         echo 'Database migrations complete!'
@@ -174,6 +171,8 @@ services:
       R2_PUBLIC_URL: ${R2_PUBLIC_URL}
       # Anthropic API for AI Chat
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # Testing - Date Override (simulate weekend on weekdays)
+      TEST_DATE_OVERRIDE: ${TEST_DATE_OVERRIDE:-}
     ports:
       - "3000:3000"
     volumes:

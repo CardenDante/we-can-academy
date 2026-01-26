@@ -3,6 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import {
+  getCurrentDate,
+  getDayOfWeek,
+  isWeekend,
+  getCurrentWeekendDay,
+  getWeekendSaturdayDate,
+} from "@/lib/date-utils";
 
 /**
  * Check in a student at the gate
@@ -49,13 +56,8 @@ export async function checkInStudent(admissionNumber: string) {
   }
 
   // Check-in is ONLY allowed on Saturday (6) or Sunday (0)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const dayOfWeek = today.getDay();
-
-  // Only allow check-in on weekends
-  if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+  // Use date utility for testing support (TEST_DATE_OVERRIDE env var)
+  if (!isWeekend()) {
     return {
       success: false,
       status: "not_weekend" as const,
@@ -73,15 +75,7 @@ export async function checkInStudent(admissionNumber: string) {
   }
 
   // Calculate the Saturday of this weekend
-  let saturdayDate: Date;
-  if (dayOfWeek === 0) {
-    // Sunday - go back 1 day to Saturday
-    saturdayDate = new Date(today);
-    saturdayDate.setDate(today.getDate() - 1);
-  } else {
-    // Saturday - use today
-    saturdayDate = new Date(today);
-  }
+  const saturdayDate = getWeekendSaturdayDate();
 
   const weekend = await prisma.weekend.findUnique({
     where: { saturdayDate },
@@ -104,7 +98,7 @@ export async function checkInStudent(admissionNumber: string) {
     };
   }
 
-  const currentDay = dayOfWeek === 0 ? "SUNDAY" : "SATURDAY";
+  const currentDay = getCurrentWeekendDay();
 
   // Use upsert to prevent race conditions - handles concurrent check-ins safely
   // If record exists, do nothing (update with same data)
@@ -189,22 +183,8 @@ export async function getTodayCheckIns(limit: number = 100, offset: number = 0) 
     throw new Error("Please log in to view check-ins.");
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const dayOfWeek = today.getDay();
-
-  // Calculate the Saturday of this weekend
-  let saturdayDate: Date;
-  if (dayOfWeek === 0) {
-    saturdayDate = new Date(today);
-    saturdayDate.setDate(today.getDate() - 1);
-  } else if (dayOfWeek === 6) {
-    saturdayDate = new Date(today);
-  } else {
-    saturdayDate = new Date(today);
-    saturdayDate.setDate(today.getDate() - dayOfWeek - 1);
-  }
+  // Use date utility for testing support
+  const saturdayDate = getWeekendSaturdayDate();
 
   const weekend = await prisma.weekend.findUnique({
     where: { saturdayDate },
@@ -214,7 +194,7 @@ export async function getTodayCheckIns(limit: number = 100, offset: number = 0) 
     return { checkIns: [], weekend: null, day: null, total: 0, hasMore: false };
   }
 
-  const currentDay = dayOfWeek === 0 ? "SUNDAY" : "SATURDAY";
+  const currentDay = getCurrentWeekendDay();
 
   // Get total count for pagination
   const total = await prisma.checkIn.count({
@@ -253,21 +233,8 @@ export async function getTodayCheckIns(limit: number = 100, offset: number = 0) 
  * Check if a student has checked in today
  */
 export async function hasCheckedInToday(studentId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const dayOfWeek = today.getDay();
-
-  let saturdayDate: Date;
-  if (dayOfWeek === 0) {
-    saturdayDate = new Date(today);
-    saturdayDate.setDate(today.getDate() - 1);
-  } else if (dayOfWeek === 6) {
-    saturdayDate = new Date(today);
-  } else {
-    saturdayDate = new Date(today);
-    saturdayDate.setDate(today.getDate() - dayOfWeek - 1);
-  }
+  // Use date utility for testing support
+  const saturdayDate = getWeekendSaturdayDate();
 
   const weekend = await prisma.weekend.findUnique({
     where: { saturdayDate },
@@ -277,7 +244,7 @@ export async function hasCheckedInToday(studentId: string) {
     return false;
   }
 
-  const currentDay = dayOfWeek === 0 ? "SUNDAY" : "SATURDAY";
+  const currentDay = getCurrentWeekendDay();
 
   const checkIn = await prisma.checkIn.findUnique({
     where: {
@@ -305,20 +272,8 @@ export async function getCheckInStats(weekendId?: string) {
   let targetWeekendId = weekendId;
 
   if (!targetWeekendId) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay();
-
-    let saturdayDate: Date;
-    if (dayOfWeek === 0) {
-      saturdayDate = new Date(today);
-      saturdayDate.setDate(today.getDate() - 1);
-    } else if (dayOfWeek === 6) {
-      saturdayDate = new Date(today);
-    } else {
-      saturdayDate = new Date(today);
-      saturdayDate.setDate(today.getDate() - dayOfWeek - 1);
-    }
+    // Use date utility for testing support
+    const saturdayDate = getWeekendSaturdayDate();
 
     const weekend = await prisma.weekend.findUnique({
       where: { saturdayDate },
@@ -342,10 +297,8 @@ export async function getCheckInStats(weekendId?: string) {
     where: { isExpelled: false },
   });
 
-  // Determine current day
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const currentDay = dayOfWeek === 0 ? "SUNDAY" : "SATURDAY";
+  // Determine current day using date utility for testing support
+  const currentDay = getCurrentWeekendDay();
 
   // OPTIMIZED: Use database aggregation instead of N+1 queries
   // Get check-in counts by course using a single efficient query
