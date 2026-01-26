@@ -1,19 +1,21 @@
 /**
  * Service Worker for Offline Support
  * Caches API responses and static assets
- * Version: 1.0.0
+ * Version: 1.1.0
  */
 
-const CACHE_VERSION = "wecan-v1";
+const CACHE_VERSION = "wecan-v2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
+const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
   "/",
   "/staff",
   "/teacher",
+  "/security",
   "/offline",
 ];
 
@@ -22,6 +24,9 @@ const CACHEABLE_API_ROUTES = [
   "/api/mobile/weekends",
   "/api/mobile/sessions",
   "/api/mobile/students",
+  "/api/mobile/attendance",
+  "/api/mobile/checkin",
+  "/api/mobile/chapel",
 ];
 
 // Install event - cache static assets
@@ -46,7 +51,11 @@ self.addEventListener("activate", (event) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => {
-            return cacheName.startsWith("wecan-") && cacheName !== STATIC_CACHE && cacheName !== API_CACHE && cacheName !== IMAGE_CACHE;
+            return cacheName.startsWith("wecan-") &&
+                   cacheName !== STATIC_CACHE &&
+                   cacheName !== API_CACHE &&
+                   cacheName !== IMAGE_CACHE &&
+                   cacheName !== RUNTIME_CACHE;
           })
           .map((cacheName) => {
             console.log("[ServiceWorker] Deleting old cache:", cacheName);
@@ -153,17 +162,40 @@ async function handleImageRequest(request) {
 
 /**
  * Network first with cache fallback for static assets
+ * Aggressively caches JavaScript, CSS, and fonts
  */
 async function handleStaticRequest(request) {
+  const url = new URL(request.url);
+
+  // Check if it's a Next.js asset (JS, CSS, fonts)
+  const isNextAsset = url.pathname.startsWith("/_next/") ||
+                     url.pathname.match(/\.(js|css|woff|woff2|ttf|otf)$/i);
+
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(STATIC_CACHE);
+      // Cache Next.js assets more aggressively
+      const cache = await caches.open(isNextAsset ? RUNTIME_CACHE : STATIC_CACHE);
       cache.put(request, response.clone());
     }
     return response;
   } catch (error) {
-    const cachedResponse = await caches.match(request);
+    // Try multiple cache stores
+    let cachedResponse = await caches.match(request);
+
+    if (!cachedResponse && url.pathname === "/") {
+      // If root path fails, try to serve from any cached HTML
+      const cache = await caches.open(STATIC_CACHE);
+      const keys = await cache.keys();
+      const htmlKeys = keys.filter(req => {
+        const reqUrl = new URL(req.url);
+        return reqUrl.pathname === "/" || reqUrl.pathname.startsWith("/staff") || reqUrl.pathname.startsWith("/teacher") || reqUrl.pathname.startsWith("/security");
+      });
+      if (htmlKeys.length > 0) {
+        cachedResponse = await cache.match(htmlKeys[0]);
+      }
+    }
+
     if (cachedResponse) {
       console.log("[ServiceWorker] Serving static from cache:", request.url);
       return cachedResponse;

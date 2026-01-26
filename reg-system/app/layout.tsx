@@ -5,6 +5,19 @@ import { OfflineProvider } from "@/components/offline-provider";
 export const metadata: Metadata = {
   title: "We Can Academy",
   description: "Weekend Skills Development System",
+  manifest: "/manifest.json",
+  themeColor: "#000000",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "We Can Academy",
+  },
 };
 
 export default function RootLayout({
