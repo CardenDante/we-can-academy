@@ -18,7 +18,6 @@ const courses = [
   "Carpentry",
   "Catering",
   "Chinese",
-  "Computer",
   "Computer Packages",
   "Cosmetology",
   "Digital Marketing",
